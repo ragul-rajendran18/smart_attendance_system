@@ -414,3 +414,114 @@ def start_session(request):
         "students": data
 
     })
+
+from .models import Attendance
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def save_attendance(request):
+
+    if request.user.role != "STAFF":
+        return Response(
+            {"message":"Permission Denied"},
+            status=403
+        )
+
+    session_id = request.data.get("session_id")
+
+    attendance = request.data.get("attendance")
+
+    if not session_id or not attendance:
+
+        return Response(
+            {"message":"Invalid Data"},
+            status=400
+        )
+
+    session = TimeTable.objects.get(id=session_id)
+
+    for record in attendance:
+
+        student = Student.objects.get(id=record["student_id"])
+
+        Attendance.objects.create(
+
+            session=session,
+
+            student=student,
+
+            status=record["status"]
+
+        )
+
+    return Response({
+
+        "message":"Attendance Saved Successfully"
+
+    })
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from .models import Student, Attendance
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def student_attendance(request):
+
+    if request.user.role != "STUDENT":
+        return Response({
+            "message": "Permission Denied"
+        }, status=403)
+
+    try:
+        student = Student.objects.get(user=request.user)
+    except Student.DoesNotExist:
+        return Response({
+            "message": "Student Not Found"
+        }, status=404)
+
+    attendance_records = Attendance.objects.filter(student=student)
+
+    total_classes = attendance_records.count()
+    present = attendance_records.filter(status="Present").count()
+    absent = attendance_records.filter(status="Absent").count()
+
+    percentage = 0
+
+    if total_classes > 0:
+        percentage = round((present / total_classes) * 100, 2)
+
+    attendance_data = []
+
+    for record in attendance_records:
+
+        attendance_data.append({
+
+            # "date": record.session.created_at.date(),
+
+            "period": record.session.period,
+
+            "subject": record.session.subject.subject_name,
+
+            "status": record.status
+
+        })
+
+    return Response({
+
+        "student_name": student.student_name,
+
+        "register_no": student.register_no,
+
+        "total_classes": total_classes,
+
+        "present": present,
+
+        "absent": absent,
+
+        "attendance_percentage": percentage,
+
+        "attendance": attendance_data
+
+    })
