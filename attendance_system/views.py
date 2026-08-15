@@ -264,6 +264,7 @@ def staff_dashboard(request):
         )
 
     current_time = datetime.now().time()
+    print(current_time)
 
     if time(10, 0) <= current_time <= time(10, 50):
         period = 1

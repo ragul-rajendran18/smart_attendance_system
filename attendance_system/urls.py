@@ -13,6 +13,6 @@ urlpatterns = [
     path("staff/start-session/", start_session),
     path("staff/save-attendance/", save_attendance),
     path("student/attendance/", student_attendance),
-     
+    
 
 ]

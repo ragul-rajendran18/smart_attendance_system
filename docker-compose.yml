@@ -1,6 +1,8 @@
 services:
   web:
     build: .
+    environment:
+      TZ: Asia/Kolkata
     ports:
       - "8000:8000"
     volumes:
