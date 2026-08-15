@@ -11,6 +11,9 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import pymysql
+
+pymysql.install_as_MySQLdb()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -76,15 +79,20 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': "attendance_system",
-        'USER': "postgres",
-        'PASSWORD': "ragul1810",
-        'HOST' : 'localhost',
-        'PORT' : '5432',
+        'ENGINE': 'django_tidb',
+        'NAME': 'smart_attendance_system',
+        'USER': 'oGXZjnqHoZ1XMHD.root',
+        'PASSWORD': 'Y4heiN00HWDhDe3M',
+        'HOST': 'gateway01.ap-southeast-1.prod.aws.tidbcloud.com',
+        'PORT': '4000',
+
+        'OPTIONS': {
+            'ssl': {
+                'ca': '/etc/ssl/certs/ca-certificates.crt',
+            },
+        },
     }
 }
-
 
 
 # Password validation
