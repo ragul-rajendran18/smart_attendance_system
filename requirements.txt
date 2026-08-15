@@ -1,0 +1,14 @@
+asgiref==3.12.1
+Django==6.1
+django-tidb==5.2.1
+djangorestframework==3.18.0
+djangorestframework_simplejwt==5.5.1
+iniconfig==2.3.0
+packaging==26.2
+pluggy==1.6.0
+Pygments==2.20.0
+PyJWT==2.13.0
+PyMySQL==1.2.0
+pytest==8.4.1
+pytest-json-ctrf==0.3.5
+sqlparse==0.6.0

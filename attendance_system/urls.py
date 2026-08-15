@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import create_student,create_staff,login,student_profile,staff_profile,staff_dashboard,start_session
+from .views import create_student,create_staff,login,student_profile,staff_profile,staff_dashboard,start_session,save_attendance,student_attendance
 
 urlpatterns = [
 
@@ -9,6 +9,10 @@ urlpatterns = [
     path("login/", login),
     path("student/profile/", student_profile),
     path("staff/profile/", staff_profile),
-     path("staff/dashboard/", staff_dashboard),
-     path("staff/start-session/", start_session),
+    path("staff/dashboard/", staff_dashboard),
+    path("staff/start-session/", start_session),
+    path("staff/save-attendance/", save_attendance),
+    path("student/attendance/", student_attendance),
+    
+
 ]

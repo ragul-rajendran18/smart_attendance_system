@@ -40,10 +40,13 @@ class Staff(models.Model):
 class Subject(models.Model):
 
     subject_code = models.CharField(max_length=20, unique=True)
+
     subject_name = models.CharField(max_length=100)
 
+    class_name = models.CharField(max_length=50)
+
     def __str__(self):
-        return self.subject_name
+        return f"{self.class_name} - {self.subject_name}"
 
 
 # -------------------------
@@ -180,3 +183,29 @@ class Attendance(models.Model):
 
     def __str__(self):
         return f"{self.student.student_name} - {self.status}"
+
+
+class Attendance(models.Model):
+
+    STATUS_CHOICES = (
+        ("Present", "Present"),
+        ("Absent", "Absent"),
+    )
+
+    session = models.ForeignKey(
+        TimeTable,
+        on_delete=models.CASCADE
+    )
+
+    student = models.ForeignKey(
+        Student,
+        on_delete=models.CASCADE
+    )
+
+    status = models.CharField(
+        max_length=10,
+        choices=STATUS_CHOICES
+    )
+
+    def __str__(self):
+        return f"{self.student.student_name} - {self.status}"    
