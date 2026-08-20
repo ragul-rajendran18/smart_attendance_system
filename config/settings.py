@@ -59,7 +59,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -79,7 +79,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django_tidb',
+        'ENGINE': 'django.db.backends.mysql',
         'NAME': 'smart_attendance_system',
         'USER': 'oGXZjnqHoZ1XMHD.root',
         'PASSWORD': 'Y4heiN00HWDhDe3M',
@@ -88,7 +88,7 @@ DATABASES = {
 
         'OPTIONS': {
             'ssl': {
-                'ca': '/etc/ssl/certs/ca-certificates.crt',
+               'ca': str(BASE_DIR / 'attendance_system' / 'isrgrootx1.pem'),
             },
         },
     }
@@ -119,7 +119,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Kolkata'
 
 USE_I18N = True
 
