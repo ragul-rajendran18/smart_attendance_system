@@ -24,6 +24,42 @@ from .utils import generate_username, generate_password
 from datetime import datetime
 from .models import TimeTable
 
+import uuid
+from django.core.cache import cache
+
+from django.http import HttpResponse
+
+from rest_framework.decorators import (
+    api_view,
+    permission_classes,
+    parser_classes,
+)
+from rest_framework.parsers import (
+    MultiPartParser,
+    FormParser,
+)
+from rest_framework.response import Response
+from rest_framework import status
+
+from .permissions import IsAdminRole
+
+from .services.student_import_service import (
+    import_students_from_file,
+    generate_credentials_excel,
+)
+from .permissions import IsAdminRole
+
+from .services.staff_import_service import (
+    import_staff_from_file,
+)
+
+from .services.staff_result_service import (
+    generate_staff_import_result_excel,
+)
+import json
+import zipfile
+from io import BytesIO
+
 
 PERIOD_SCHEDULE = (
     (1, time(9, 0), time(9, 50)),
@@ -607,7 +643,7 @@ def staff_dashboard(request):
         end = "15:10"
 
     else:
-    active_period = get_active_period()
+     active_period = get_active_period()
     if active_period is None:
         return Response({
              "message": "No Active Session"
@@ -837,3 +873,465 @@ def student_attendance(request):
         "attendance": attendance_data
 
     })
+
+@api_view(["POST"])
+@permission_classes([IsAdminRole])
+@parser_classes([MultiPartParser, FormParser])
+def bulk_upload_students(request):
+
+    # ========================================================
+    # 1. GET FILE
+    # ========================================================
+
+    uploaded_file = request.FILES.get("file")
+
+    if not uploaded_file:
+        return Response(
+            {
+                "message": "File is required.",
+                "field": "file",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    # ========================================================
+    # 2. VALIDATE FILE
+    # ========================================================
+
+    filename = uploaded_file.name.lower()
+
+    allowed_extensions = (
+        ".xlsx",
+        ".csv",
+        ".pdf",
+    )
+
+    if not filename.endswith(allowed_extensions):
+        return Response(
+            {
+                "message": (
+                    "Unsupported file format. "
+                    "Supported formats: XLSX, CSV, PDF."
+                ),
+                "filename": uploaded_file.name,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    # ========================================================
+    # 3. IMPORT STUDENTS
+    # ========================================================
+
+    try:
+
+        result = import_students_from_file(
+            uploaded_file,
+            admin_user=request.user,
+        )
+
+    except ValueError as exc:
+
+        return Response(
+            {
+                "message": str(exc),
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    except Exception as exc:
+
+        return Response(
+            {
+                "message": "Student import failed.",
+                "error": str(exc),
+            },
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+    # ========================================================
+    # 4. GET RESULT
+    # ========================================================
+
+    created_students = result.get(
+        "created_students",
+        []
+    )
+
+    ignored_students = result.get(
+        "ignored_students",
+        []
+    )
+
+    failed_students = result.get(
+        "failed_students",
+        []
+    )
+
+    # ========================================================
+    # 5. CREATE DOWNLOAD TOKEN
+    # ========================================================
+
+    download_token = uuid.uuid4().hex
+
+    # Store only temporarily.
+    #
+    # 1 hour = 3600 seconds
+    #
+    cache.set(
+        f"student_import:{download_token}",
+        {
+            "created_students": created_students,
+            "ignored_students": ignored_students,
+            "failed_students": failed_students,
+        },
+        timeout=3600,
+    )
+
+    # ========================================================
+    # 6. RETURN JSON
+    # ========================================================
+
+    return Response(
+        {
+            "message": "Student import completed",
+
+            "source_file": uploaded_file.name,
+
+            "created_count": len(
+                created_students
+            ),
+
+            "ignored_count": len(
+                ignored_students
+            ),
+
+            "failed_count": len(
+                failed_students
+            ),
+
+            "created_students": created_students,
+
+            "ignored_students": ignored_students,
+
+            "failed_students": failed_students,
+
+            "download": {
+                "available": True,
+                "token": download_token,
+                "expires_in": 3600,
+                "endpoint": (
+                    f"/api/students/"
+                    f"bulk-upload/download/"
+                    f"{download_token}/"
+                ),
+            },
+        },
+        status=status.HTTP_200_OK,
+    )
+
+@api_view(["GET"])
+@permission_classes([IsAdminRole])
+def download_student_import_result(request, token):
+
+    # ========================================================
+    # 1. GET STORED IMPORT RESULT
+    # ========================================================
+
+    cache_key = f"student_import:{token}"
+
+    import_result = cache.get(cache_key)
+
+    if not import_result:
+
+        return Response(
+            {
+                "message": (
+                    "Import result not found or "
+                    "download link has expired."
+                ),
+            },
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    # ========================================================
+    # 2. GET DATA
+    # ========================================================
+
+    created_students = import_result.get(
+        "created_students",
+        []
+    )
+
+    ignored_students = import_result.get(
+        "ignored_students",
+        []
+    )
+
+    failed_students = import_result.get(
+        "failed_students",
+        []
+    )
+
+    # ========================================================
+    # 3. GENERATE EXCEL
+    # ========================================================
+
+    try:
+
+        excel_file = generate_credentials_excel(
+            created_students=created_students,
+            ignored_students=ignored_students,
+            failed_students=failed_students,
+        )
+
+    except Exception as exc:
+
+        return Response(
+            {
+                "message": "Failed to generate result Excel.",
+                "error": str(exc),
+            },
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+    # ========================================================
+    # 4. RETURN EXCEL
+    # ========================================================
+
+    response = HttpResponse(
+        excel_file.getvalue(),
+        content_type=(
+            "application/vnd.openxmlformats-officedocument."
+            "spreadsheetml.sheet"
+        ),
+    )
+
+    response["Content-Disposition"] = (
+        'attachment; filename="student_import_result.xlsx"'
+    )
+
+    return response
+from django.core.cache import cache
+from django.http import HttpResponse
+
+from rest_framework.decorators import (
+    api_view,
+    permission_classes,
+    parser_classes,
+)
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.response import Response
+from rest_framework import status
+
+
+
+
+@api_view(["POST"])
+@permission_classes([IsAdminRole])
+@parser_classes([MultiPartParser, FormParser])
+def bulk_upload_staff(request):
+
+    uploaded_file = request.FILES.get(
+        "file"
+    )
+
+    if not uploaded_file:
+
+        return Response(
+            {
+                "message": "File is required.",
+                "field": "file",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    filename = (
+        uploaded_file.name
+        .lower()
+        .strip()
+    )
+
+    allowed_extensions = (
+        ".xlsx",
+        ".csv",
+        ".pdf",
+    )
+
+    if not filename.endswith(
+        allowed_extensions
+    ):
+
+        return Response(
+            {
+                "message": (
+                    "Unsupported file format. "
+                    "Supported formats: XLSX, CSV, PDF."
+                ),
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    try:
+
+        result = import_staff_from_file(
+            uploaded_file,
+            admin_user=request.user,
+        )
+
+    except ValueError as exc:
+
+        return Response(
+            {
+                "message": str(exc),
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    except Exception as exc:
+
+        return Response(
+            {
+                "message": "Staff import failed.",
+                "error": str(exc),
+            },
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+    created_staff = result.get(
+        "created_staff",
+        [],
+    )
+
+    ignored_staff = result.get(
+        "ignored_staff",
+        [],
+    )
+
+    failed_staff = result.get(
+        "failed_staff",
+        [],
+    )
+
+    # ========================================================
+    # DOWNLOAD TOKEN
+    # ========================================================
+
+    token = uuid.uuid4().hex
+
+    cache.set(
+        f"staff_import:{token}",
+        {
+            "created_staff": created_staff,
+            "ignored_staff": ignored_staff,
+            "failed_staff": failed_staff,
+        },
+        timeout=3600,
+    )
+
+    return Response(
+        {
+            "message": "Staff import completed",
+
+            "source_file": uploaded_file.name,
+
+            "created_count": len(
+                created_staff
+            ),
+
+            "ignored_count": len(
+                ignored_staff
+            ),
+
+            "failed_count": len(
+                failed_staff
+            ),
+
+            "created_staff": created_staff,
+
+            "ignored_staff": ignored_staff,
+
+            "failed_staff": failed_staff,
+
+            "download_token": token,
+
+            "download_url": (
+                "/api/staff/bulk-upload/"
+                f"download/{token}/"
+            ),
+        },
+        status=status.HTTP_200_OK,
+    )
+@api_view(["GET"])
+@permission_classes([IsAdminRole])
+def download_staff_import_result(
+    request,
+    token,
+):
+
+    result = cache.get(
+        f"staff_import:{token}"
+    )
+
+    if not result:
+
+        return Response(
+            {
+                "message": (
+                    "Import result not found "
+                    "or expired."
+                ),
+            },
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    try:
+
+        excel_file = (
+            generate_staff_import_result_excel(
+                created_staff=result.get(
+                    "created_staff",
+                    [],
+                ),
+
+                ignored_staff=result.get(
+                    "ignored_staff",
+                    [],
+                ),
+
+                failed_staff=result.get(
+                    "failed_staff",
+                    [],
+                ),
+            )
+        )
+
+    except Exception as exc:
+
+        return Response(
+            {
+                "message": (
+                    "Failed to generate "
+                    "Excel result."
+                ),
+
+                "error": str(exc),
+            },
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+    response = HttpResponse(
+        excel_file.getvalue(),
+        content_type=(
+            "application/vnd.openxmlformats-officedocument."
+            "spreadsheetml.sheet"
+        ),
+    )
+
+    response[
+        "Content-Disposition"
+    ] = (
+        'attachment; '
+        'filename="staff_import_result.xlsx"'
+    )
+
+    return response
