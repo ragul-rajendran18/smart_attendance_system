@@ -12,3 +12,4 @@ PyMySQL==1.2.0
 pytest==8.4.1
 pytest-json-ctrf==0.3.5
 sqlparse==0.6.0
+openpyxl==3.1.5

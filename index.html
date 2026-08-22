@@ -373,6 +373,12 @@
             <label>Class Name</label>
             <input id="cs-class" type="text" placeholder="e.g. CSE-A"/>
           </div>
+          <div class="form-group">
+            <label for="cs-batch">Batch</label>
+            <select id="cs-batch" required>
+              <option value="">Select batch</option>
+            </select>
+          </div>
           <button class="btn btn-primary w-full" onclick="createStudent()" style="justify-content:center;">
             Create Student
           </button>
@@ -441,6 +447,63 @@
           <p>Subjects are grouped by class name.</p>
           <br/>
           <p>Staff can choose a class in the dashboard to see its subjects.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ADMIN: Create Batch ── -->
+    <div class="panel" id="panel-create-batch">
+      <div class="panel-title"><span>🎓</span> Create Batch</div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="form-group">
+            <label for="cb-name">Batch Name</label>
+            <input id="cb-name" type="text" placeholder="e.g. 2029-2033" maxlength="20"/>
+          </div>
+          <button class="btn btn-primary w-full" onclick="createBatch()" style="justify-content:center;">Create Batch</button>
+          <div id="cb-result" class="hidden"></div>
+        </div>
+        <div class="card" style="color:var(--muted);font-size:0.87rem;line-height:1.7;">
+          <p class="font-semibold text-sm" style="color:var(--text);margin-bottom:0.75rem;">📌 Batch format</p>
+          <p>Use the admission year and graduation year, for example <strong style="color:var(--text);">2029-2033</strong>.</p>
+          <br/>
+          <p>New batches can be added here without changing the application code.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ADMIN: Weekly Report ── -->
+    <div class="panel" id="panel-weekly-report">
+      <div class="panel-title"><span>📊</span> Weekly Report</div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="form-group">
+            <label for="wr-class">Class Name</label>
+            <input id="wr-class" type="text" placeholder="e.g. III IT-B"/>
+          </div>
+          <div class="form-group">
+            <label for="wr-batch">Batch</label>
+            <select id="wr-batch" required>
+              <option value="">Select batch</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="wr-start">Start Date</label>
+            <input id="wr-start" type="date" required/>
+          </div>
+          <div class="form-group">
+            <label for="wr-end">End Date</label>
+            <input id="wr-end" type="date" required/>
+          </div>
+          <button class="btn btn-primary w-full" onclick="downloadWeeklyReport()" style="justify-content:center;">
+            Download Excel Report
+          </button>
+        </div>
+        <div class="card" style="color:var(--muted);font-size:0.87rem;line-height:1.7;">
+          <p class="font-semibold text-sm" style="color:var(--text);margin-bottom:0.75rem;">📌 Report filters</p>
+          <p>Select a class, batch, and date range. The report checks every period in the range.</p>
+          <br/>
+          <p>The existing Excel structure is preserved. The OD column remains empty.</p>
         </div>
       </div>
     </div>
@@ -621,6 +684,8 @@
       { id: 'create-student', label: '👤 Create Student' },
       { id: 'create-staff',   label: '🧑‍🏫 Create Staff'   },
       { id: 'create-subject', label: '📚 Create Subject' },
+      { id: 'create-batch',   label: '🎓 Create Batch'   },
+      { id: 'weekly-report',  label: '📊 Weekly Report'  },
     ],
     STAFF: [
       { id: 'staff-profile',   label: '🪪 Profile'       },
@@ -650,6 +715,8 @@
       loadStaffProfile();
       loadStaffDashboard();
       loadStaffClasses();
+    } else if (userRole === 'ADMIN') {
+      loadBatches();
     } else if (userRole === 'STUDENT') {
       loadStudentProfile();
       loadStudentAttendance();
@@ -686,8 +753,9 @@
       student_name: document.getElementById('cs-name').value.trim(),
       register_no:  document.getElementById('cs-regno').value.trim(),
       class_name:   document.getElementById('cs-class').value.trim(),
+      batch:        document.getElementById('cs-batch').value,
     };
-    if (!body.student_name || !body.register_no || !body.class_name) {
+    if (!body.student_name || !body.register_no || !body.class_name || !body.batch) {
       toast('All fields are required', 'error'); return;
     }
     const res = await api('POST', '/create-student/', body);
@@ -699,8 +767,71 @@
       document.getElementById('cs-name').value = '';
       document.getElementById('cs-regno').value = '';
       document.getElementById('cs-class').value = '';
+      document.getElementById('cs-batch').value = '';
     } else {
       toast(JSON.stringify(res.data), 'error');
+    }
+  }
+
+  async function loadBatches() {
+    const select = document.getElementById('cs-batch');
+    const reportSelect = document.getElementById('wr-batch');
+    const res = await api('GET', '/batches/');
+    if (!res.ok) {
+      select.innerHTML = '<option value="">Unable to load batches</option>';
+      reportSelect.innerHTML = '<option value="">Unable to load batches</option>';
+      return;
+    }
+
+    select.innerHTML = '<option value="">Select batch</option>';
+    reportSelect.innerHTML = '<option value="">Select batch</option>';
+    res.data.forEach(batch => {
+      select.innerHTML += `<option value="${batch.id}">${batch.name}</option>`;
+      reportSelect.innerHTML += `<option value="${batch.id}">${batch.name}</option>`;
+    });
+  }
+
+  async function downloadWeeklyReport() {
+    const className = document.getElementById('wr-class').value.trim();
+    const batch = document.getElementById('wr-batch').value;
+    const startDate = document.getElementById('wr-start').value;
+    const endDate = document.getElementById('wr-end').value;
+
+    if (!className || !batch || !startDate || !endDate) {
+      toast('All report fields are required', 'error'); return;
+    }
+    if (startDate > endDate) {
+      toast('Start date must be before end date', 'error'); return;
+    }
+
+    const query = new URLSearchParams({
+      class_name: className,
+      batch,
+      start_date: startDate,
+      end_date: endDate,
+    });
+
+    try {
+      const response = await fetch(`${API}/weekly-report/excel/?${query}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        toast(error.message || 'Unable to generate report', 'error'); return;
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `weekly_report_${startDate}_${endDate}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      toast('Excel report downloaded', 'success');
+    } catch (error) {
+      toast('Network error — is the server running?', 'error');
     }
   }
 
@@ -746,6 +877,22 @@
       document.getElementById('csub-class').value = '';
     } else {
       toast(res.data.message || JSON.stringify(res.data), 'error');
+    }
+  }
+
+  async function createBatch() {
+    const name = document.getElementById('cb-name').value.trim();
+    if (!name) { toast('Batch name is required', 'error'); return; }
+
+    const res = await api('POST', '/create-batch/', { name });
+    const box = document.getElementById('cb-result');
+    if (res.ok) {
+      toast('Batch created!', 'success');
+      box.classList.remove('hidden');
+      box.innerHTML = `<div class="cred-box"><p class="text-sm font-semibold text-success">✅ ${res.data.message}</p><p class="text-sm text-muted" style="margin-top:0.5rem;">${res.data.batch.name}</p></div>`;
+      document.getElementById('cb-name').value = '';
+    } else {
+      toast(res.data.name?.[0] || res.data.message || JSON.stringify(res.data), 'error');
     }
   }
 

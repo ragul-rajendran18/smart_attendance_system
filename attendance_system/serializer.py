@@ -6,17 +6,23 @@ from .models import (
     StaffSubject,
     TimeTable,
     AttendanceSession,
-    Attendance
+    Attendance,
+    Batch
 )
 
 
 class StudentSerializer(serializers.ModelSerializer):
+    batch = serializers.PrimaryKeyRelatedField(
+        queryset=Batch.objects.filter(is_active=True)
+    )
+
     class Meta:
         model = Student
         fields = [
             "student_name",
             "register_no",
             "class_name",
+            "batch",
         ]
 
 class StaffSerializer(serializers.ModelSerializer):
@@ -56,6 +62,12 @@ class AttendanceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Attendance
         fields = "__all__"
+
+
+class BatchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Batch
+        fields = ["name"]
 
 
 class LoginSerializer(serializers.Serializer):

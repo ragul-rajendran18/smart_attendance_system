@@ -13,6 +13,10 @@ from .views import (
     save_attendance,
     student_attendance,
     create_subject,
+    create_batch,
+    list_batches,
+    weekly_report,
+    weekly_report_excel,
 )
 
 urlpatterns = [
@@ -20,6 +24,10 @@ urlpatterns = [
     path("create-student/",create_student),
     path("create-staff/",create_staff),
     path("create-subject/",create_subject),
+    path("create-batch/",create_batch),
+    path("batches/",list_batches),
+    path("weekly-report/",weekly_report),
+    path("weekly-report/excel/",weekly_report_excel),
     path("login/", login),
     path("student/profile/", student_profile),
     path("staff/profile/", staff_profile),
