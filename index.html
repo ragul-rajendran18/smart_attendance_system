@@ -283,6 +283,124 @@
     @keyframes spin { to { transform: rotate(360deg); } }
     .loading-row { text-align: center; padding: 2rem; color: var(--muted); }
 
+
+    /* ── Bulk Import ── */
+    .bulk-import-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    .bulk-card { padding: 1.35rem; }
+    .bulk-card-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1.1rem;
+    }
+    .bulk-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: .65rem;
+      font-size: 1.15rem;
+    }
+    .bulk-icon.student { background: rgba(108,99,255,.14); border: 1px solid rgba(108,99,255,.25); }
+    .bulk-icon.staff { background: rgba(34,211,165,.12); border: 1px solid rgba(34,211,165,.24); }
+    .bulk-title { font-size: 1rem; font-weight: 700; margin-bottom: .25rem; }
+    .format-badge {
+      flex-shrink: 0;
+      padding: .28rem .55rem;
+      border-radius: 999px;
+      font-size: .68rem;
+      font-weight: 700;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.03);
+    }
+    .upload-zone {
+      position: relative;
+      min-height: 145px;
+      border: 1px dashed rgba(108,99,255,.45);
+      border-radius: 14px;
+      background: rgba(108,99,255,.045);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: .35rem;
+      cursor: pointer;
+      transition: .2s ease;
+      padding: 1rem;
+    }
+    .upload-zone:hover,
+    .upload-zone.dragover {
+      border-color: var(--primary);
+      background: rgba(108,99,255,.09);
+      transform: translateY(-1px);
+    }
+    .upload-zone input {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+    .upload-icon { font-size: 1.8rem; margin-bottom: .25rem; }
+    .upload-actions {
+      display: flex;
+      gap: .65rem;
+      margin-top: .85rem;
+    }
+    .upload-actions .btn-primary { flex: 1; justify-content: center; }
+    .import-guide {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      color: var(--text);
+    }
+    .import-result {
+      margin-top: 1rem;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      background: rgba(255,255,255,.025);
+    }
+    .import-result-title {
+      font-weight: 700;
+      margin-bottom: .75rem;
+    }
+    .import-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: .55rem;
+      margin-bottom: .8rem;
+    }
+    .import-stat {
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: .65rem;
+      background: rgba(255,255,255,.025);
+    }
+    .import-stat .n { font-size: 1.15rem; font-weight: 700; display:block; }
+    .import-stat .l { font-size: .68rem; color: var(--muted); }
+    .download-result {
+      width: 100%;
+      justify-content: center;
+      margin-top: .2rem;
+    }
+    @media (max-width: 760px) {
+      .bulk-import-grid { grid-template-columns: 1fr; }
+      .import-guide { flex-direction: column; align-items: flex-start; }
+    }
+
     /* ── Profile card ── */
     .profile-header {
       display: flex; align-items: center; gap: 1.25rem; margin-bottom: 1.5rem;
@@ -472,6 +590,98 @@
       </div>
     </div>
 
+
+    <!-- ── ADMIN: BULK IMPORT ── -->
+    <div class="panel" id="panel-bulk-import">
+      <div class="panel-title"><span>📥</span> Bulk Import</div>
+
+      <div class="bulk-import-grid">
+        <!-- Student bulk upload -->
+        <div class="card bulk-card">
+          <div class="bulk-card-head">
+            <div>
+              <div class="bulk-icon student">👤</div>
+              <div class="bulk-title">Students</div>
+              <p class="text-muted text-sm">Create multiple student accounts from one file.</p>
+            </div>
+            <span class="format-badge">XLSX · CSV · PDF</span>
+          </div>
+
+          <div class="upload-zone" id="student-upload-zone">
+            <input id="student-bulk-file" type="file"
+                   accept=".xlsx,.csv,.pdf"
+                   onchange="handleBulkFile('student')"/>
+            <div class="upload-icon">☁️</div>
+            <strong id="student-file-title">Choose student file</strong>
+            <span id="student-file-name" class="text-muted text-sm">or drag & drop here</span>
+          </div>
+
+          <div class="upload-actions">
+            <button class="btn btn-primary" id="student-upload-btn"
+                    onclick="uploadBulk('student')">
+              ⬆️ Upload Students
+            </button>
+            <button class="btn btn-outline" id="student-clear-btn"
+                    onclick="clearBulk('student')">
+              Clear
+            </button>
+          </div>
+
+          <div id="student-bulk-result" class="hidden"></div>
+        </div>
+
+        <!-- Staff bulk upload -->
+        <div class="card bulk-card">
+          <div class="bulk-card-head">
+            <div>
+              <div class="bulk-icon staff">🧑‍🏫</div>
+              <div class="bulk-title">Staff</div>
+              <p class="text-muted text-sm">Create multiple staff accounts from one file.</p>
+            </div>
+            <span class="format-badge">XLSX · CSV · PDF</span>
+          </div>
+
+          <div class="upload-zone" id="staff-upload-zone">
+            <input id="staff-bulk-file" type="file"
+                   accept=".xlsx,.csv,.pdf"
+                   onchange="handleBulkFile('staff')"/>
+            <div class="upload-icon">☁️</div>
+            <strong id="staff-file-title">Choose staff file</strong>
+            <span id="staff-file-name" class="text-muted text-sm">or drag & drop here</span>
+          </div>
+
+          <div class="upload-actions">
+            <button class="btn btn-primary" id="staff-upload-btn"
+                    onclick="uploadBulk('staff')">
+              ⬆️ Upload Staff
+            </button>
+            <button class="btn btn-outline" id="staff-clear-btn"
+                    onclick="clearBulk('staff')">
+              Clear
+            </button>
+          </div>
+
+          <div id="staff-bulk-result" class="hidden"></div>
+        </div>
+      </div>
+
+      <div class="card import-guide">
+        <div>
+          <div class="font-semibold" style="margin-bottom:.35rem;">📌 Supported column names</div>
+          <p class="text-muted text-sm">
+            Staff accepts names such as <strong>Staff Name</strong>, <strong>Teacher Name</strong>,
+            <strong>Professor Name</strong>, <strong>Faculty Name</strong> and IDs such as
+            <strong>Staff ID</strong>, <strong>Teacher ID</strong>, <strong>Employee ID</strong>.
+            Student import uses the student fields supported by your backend parser.
+          </p>
+        </div>
+        <div class="text-sm text-muted">
+          <strong style="color:var(--text);">Flow:</strong>
+          Upload → Validate → Create → Download Result
+        </div>
+      </div>
+    </div>
+
     <!-- ── ADMIN: Weekly Report ── -->
     <div class="panel" id="panel-weekly-report">
       <div class="panel-title"><span>📊</span> Weekly Report</div>
@@ -632,9 +842,13 @@
 
   /* ── Init ── */
   window.onload = () => {
+    setupBulkDragDrop('student');
+    setupBulkDragDrop('staff');
+
     if (accessToken && userRole) {
       showApp();
     }
+
     document.getElementById('login-password')
       .addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
   };
@@ -685,6 +899,7 @@
       { id: 'create-staff',   label: '🧑‍🏫 Create Staff'   },
       { id: 'create-subject', label: '📚 Create Subject' },
       { id: 'create-batch',   label: '🎓 Create Batch'   },
+      { id: 'bulk-import',    label: '📥 Bulk Import'     },
       { id: 'weekly-report',  label: '📊 Weekly Report'  },
     ],
     STAFF: [
@@ -1055,7 +1270,7 @@
     currentSessionId = d.session_id;
     sessionStudents  = d.students || [];
 
-    toast(`Session started — Période ${d.period}`, 'success');
+    toast(`Session started — Period ${d.period}`, 'success');
 
     document.getElementById('session-info-text').textContent =
       `${d.subject} · ${d.class_name}`;
@@ -1195,6 +1410,272 @@
       tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:1.5rem;">No attendance records yet.</td></tr>`;
     }
     document.getElementById('att-records').classList.remove('hidden');
+  }
+
+
+  /* ══════════════════════
+     ADMIN: BULK IMPORT
+  ══════════════════════ */
+
+  const BULK_ENDPOINTS = {
+    student: {
+      upload: '/students/bulk-upload/',
+      resultTitle: 'Student Import Result',
+    },
+    staff: {
+      upload: '/staff/bulk-upload/',
+      resultTitle: 'Staff Import Result',
+    },
+  };
+
+  function handleBulkFile(type) {
+    const input = document.getElementById(`${type}-bulk-file`);
+    const zone = document.getElementById(`${type}-upload-zone`);
+    const title = document.getElementById(`${type}-file-title`);
+    const name = document.getElementById(`${type}-file-name`);
+
+    const file = input.files[0];
+
+    if (!file) {
+      title.textContent = `Choose ${type} file`;
+      name.textContent = 'or drag & drop here';
+      zone.classList.remove('dragover');
+      return;
+    }
+
+    const allowed = ['.xlsx', '.csv', '.pdf'];
+    const lower = file.name.toLowerCase();
+
+    if (!allowed.some(ext => lower.endsWith(ext))) {
+      input.value = '';
+      title.textContent = `Choose ${type} file`;
+      name.textContent = 'or drag & drop here';
+      toast('Only XLSX, CSV and PDF files are supported', 'error');
+      return;
+    }
+
+    title.textContent = 'File selected';
+    name.textContent = `${file.name} · ${formatBytes(file.size)}`;
+    zone.classList.remove('dragover');
+  }
+
+  function clearBulk(type) {
+    const input = document.getElementById(`${type}-bulk-file`);
+    const result = document.getElementById(`${type}-bulk-result`);
+    const title = document.getElementById(`${type}-file-title`);
+    const name = document.getElementById(`${type}-file-name`);
+
+    input.value = '';
+    title.textContent = `Choose ${type} file`;
+    name.textContent = 'or drag & drop here';
+    result.classList.add('hidden');
+    result.innerHTML = '';
+  }
+
+  async function uploadBulk(type) {
+    const input = document.getElementById(`${type}-bulk-file`);
+    const btn = document.getElementById(`${type}-upload-btn`);
+    const resultBox = document.getElementById(`${type}-bulk-result`);
+    const file = input.files[0];
+
+    if (!file) {
+      toast(`Choose a ${type} file first`, 'error');
+      return;
+    }
+
+    const form = new FormData();
+    form.append('file', file);
+
+    const oldText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner"></div> Uploading…';
+
+    try {
+      const response = await fetch(
+        `${API}${BULK_ENDPOINTS[type].upload}`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: form,
+        }
+      );
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        toast(data.message || `Failed to import ${type}s`, 'error');
+        return;
+      }
+
+      renderBulkResult(type, data);
+      toast(
+        `${type === 'student' ? 'Student' : 'Staff'} import completed`,
+        'success'
+      );
+
+    } catch (error) {
+      toast('Network error — is the server running?', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = oldText;
+    }
+  }
+
+  function renderBulkResult(type, data) {
+    const box = document.getElementById(`${type}-bulk-result`);
+
+    const created = Number(data.created_count || 0);
+    const ignored = Number(data.ignored_count || 0);
+    const failed = Number(data.failed_count || 0);
+
+    box.classList.remove('hidden');
+
+    box.innerHTML = `
+      <div class="import-result">
+        <div class="import-result-title">
+          ${BULK_ENDPOINTS[type].resultTitle}
+        </div>
+
+        <div class="import-stats">
+          <div class="import-stat">
+            <span class="n text-success">${created}</span>
+            <span class="l">Created</span>
+          </div>
+
+          <div class="import-stat">
+            <span class="n" style="color:var(--warning)">${ignored}</span>
+            <span class="l">Ignored</span>
+          </div>
+
+          <div class="import-stat">
+            <span class="n text-danger">${failed}</span>
+            <span class="l">Failed</span>
+          </div>
+        </div>
+
+        <div class="text-xs text-muted" style="margin-bottom:.7rem;">
+          ${escapeHtml(data.source_file || 'Import completed')}
+        </div>
+
+        ${
+          data.download_token
+            ? `
+              <button class="btn btn-success download-result"
+                      onclick="downloadBulkResult('${type}', '${data.download_token}')">
+                ⬇️ Download Excel Result
+              </button>
+            `
+            : ''
+        }
+
+        ${
+          !data.download_token
+            ? `
+              <div class="text-xs text-muted">
+                No download token was returned by the server.
+              </div>
+            `
+            : ''
+        }
+      </div>
+    `;
+  }
+
+  async function downloadBulkResult(type, token) {
+    if (!token) {
+      toast('Download token is missing', 'error');
+      return;
+    }
+
+    const endpoint =
+      `${API}${type === 'staff'
+        ? `/staff/bulk-upload/download/${encodeURIComponent(token)}/`
+        : `/students/bulk-upload/download/${encodeURIComponent(token)}/`}`;
+
+    try {
+      const response = await fetch(endpoint, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        toast(error.message || 'Import result not found or expired', 'error');
+        return;
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+
+      link.href = url;
+      link.download =
+        `${type}_import_result.xlsx`;
+
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      URL.revokeObjectURL(url);
+
+      toast('Excel result downloaded', 'success');
+
+    } catch (error) {
+      toast('Network error — is the server running?', 'error');
+    }
+  }
+
+  function setupBulkDragDrop(type) {
+    const zone = document.getElementById(`${type}-upload-zone`);
+    const input = document.getElementById(`${type}-bulk-file`);
+
+    if (!zone || !input) return;
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+      zone.addEventListener(eventName, event => {
+        event.preventDefault();
+        zone.classList.add('dragover');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      zone.addEventListener(eventName, event => {
+        event.preventDefault();
+        zone.classList.remove('dragover');
+      });
+    });
+
+    zone.addEventListener('drop', event => {
+      const files = event.dataTransfer.files;
+
+      if (!files.length) return;
+
+      input.files = files;
+      handleBulkFile(type);
+    });
+  }
+
+  function formatBytes(bytes) {
+    if (!bytes) return '0 B';
+
+    const units = ['B', 'KB', 'MB', 'GB'];
+    const index = Math.floor(
+      Math.log(bytes) / Math.log(1024)
+    );
+
+    return `${(bytes / Math.pow(1024, index)).toFixed(1)} ${units[index]}`;
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
   }
 
   /* ══════════════════════

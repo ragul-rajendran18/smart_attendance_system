@@ -1,8 +1,12 @@
 from django.urls import path
 
 from .views import (
+    bulk_upload_staff,
+    bulk_upload_students,
     create_student,
     create_staff,
+    download_staff_import_result,
+    download_student_import_result,
     login,
     student_profile,
     staff_profile,
@@ -37,7 +41,26 @@ urlpatterns = [
     path("staff/start-session/", start_session),
     path("staff/save-attendance/", save_attendance),
     path("student/attendance/", student_attendance),
+    path(
+        "students/bulk-upload/",
+        bulk_upload_students,
+        name="bulk-upload-students",
+    ),
+    path(
+        "students/bulk-upload/download/<str:token>/",
+        download_student_import_result,
+        name="download-student-import-result",
+    ),
+ path(
+    "staff/bulk-upload/",
+    bulk_upload_staff,
+    name="bulk-upload-staff",
+),
 
-     
+path(
+    "staff/bulk-upload/download/<str:token>/",
+    download_staff_import_result,
+    name="download-staff-import-result",
+),
 
 ]
