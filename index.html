@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Smart Attendance System</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0f1e;
+      --surface: rgba(255,255,255,0.05);
+      --border: rgba(255,255,255,0.10);
+      --primary: #6c63ff;
+      --primary-glow: rgba(108,99,255,0.35);
+      --success: #22d3a5;
+      --danger: #ff5e7d;
+      --warning: #fbbf24;
+      --text: #e8eaf6;
+      --muted: #7c84a0;
+      --card: rgba(255,255,255,0.04);
+      --radius: 16px;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      background-image:
+        radial-gradient(ellipse at 20% 20%, rgba(108,99,255,0.15) 0%, transparent 55%),
+        radial-gradient(ellipse at 80% 80%, rgba(34,211,165,0.10) 0%, transparent 55%);
+    }
+
+    /* ── Utility ── */
+    .hidden { display: none !important; }
+    .flex { display: flex; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .gap-2 { gap: 0.5rem; }
+    .gap-3 { gap: 0.75rem; }
+    .gap-4 { gap: 1rem; }
+    .w-full { width: 100%; }
+    .text-sm { font-size: 0.85rem; }
+    .text-xs { font-size: 0.75rem; }
+    .font-semibold { font-weight: 600; }
+    .font-bold { font-weight: 700; }
+    .text-muted { color: var(--muted); }
+    .text-success { color: var(--success); }
+    .text-danger { color: var(--danger); }
+    .text-primary { color: var(--primary); }
+
+    /* ── Glass Card ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      backdrop-filter: blur(20px);
+      padding: 1.75rem;
+    }
+
+    /* ── Forms ── */
+    .form-group { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1rem; }
+    .form-group label { font-size: 0.82rem; color: var(--muted); font-weight: 500; letter-spacing: 0.3px; }
+    .form-group input, .form-group select {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.9rem;
+      padding: 0.65rem 1rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+      width: 100%;
+    }
+    .form-group input:focus, .form-group select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-glow);
+    }
+    .form-group select option { background: #1a1f35; }
+
+    /* ── Buttons ── */
+    .btn {
+      border: none; border-radius: 10px; cursor: pointer;
+      font-family: inherit; font-size: 0.88rem; font-weight: 600;
+      padding: 0.65rem 1.4rem; transition: all 0.2s; outline: none;
+      display: inline-flex; align-items: center; gap: 0.4rem;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #6c63ff, #8b5cf6);
+      color: #fff; box-shadow: 0 4px 20px var(--primary-glow);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 28px var(--primary-glow); }
+    .btn-success { background: linear-gradient(135deg, #22d3a5, #059669); color: #fff; }
+    .btn-success:hover { transform: translateY(-2px); }
+    .btn-danger { background: linear-gradient(135deg, #ff5e7d, #dc2626); color: #fff; }
+    .btn-outline {
+      background: transparent; border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+    .btn-sm { padding: 0.4rem 0.9rem; font-size: 0.8rem; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+    /* ── Toast ── */
+    #toast-container {
+      position: fixed; top: 1.25rem; right: 1.25rem; z-index: 9999;
+      display: flex; flex-direction: column; gap: 0.5rem;
+    }
+    .toast {
+      padding: 0.75rem 1.2rem; border-radius: 10px;
+      font-size: 0.86rem; font-weight: 500;
+      backdrop-filter: blur(20px); border: 1px solid;
+      animation: slideIn 0.3s ease;
+      max-width: 320px;
+    }
+    .toast.success { background: rgba(34,211,165,0.15); border-color: rgba(34,211,165,0.4); color: var(--success); }
+    .toast.error   { background: rgba(255,94,125,0.15);  border-color: rgba(255,94,125,0.4);  color: var(--danger); }
+    .toast.info    { background: rgba(108,99,255,0.15);  border-color: rgba(108,99,255,0.4);  color: #a99fff; }
+    @keyframes slideIn { from { opacity:0; transform:translateX(30px); } to { opacity:1; transform:translateX(0); } }
+
+    /* ══════════════════════════════════
+       LOGIN PAGE
+    ══════════════════════════════════ */
+    #login-page {
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .login-box { width: 100%; max-width: 420px; }
+    .login-brand {
+      text-align: center; margin-bottom: 2rem;
+    }
+    .login-brand .icon {
+      width: 60px; height: 60px; border-radius: 16px;
+      background: linear-gradient(135deg, #6c63ff, #8b5cf6);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 1.6rem; margin-bottom: 0.75rem;
+      box-shadow: 0 8px 32px var(--primary-glow);
+    }
+    .login-brand h1 { font-size: 1.5rem; font-weight: 700; }
+    .login-brand p  { font-size: 0.85rem; color: var(--muted); margin-top: 0.25rem; }
+
+    /* ══════════════════════════════════
+       APP SHELL
+    ══════════════════════════════════ */
+    #app-shell { display: none; flex-direction: column; min-height: 100vh; }
+
+    /* Topbar */
+    .topbar {
+      position: sticky; top: 0; z-index: 100;
+      padding: 0.9rem 1.75rem;
+      background: rgba(10,15,30,0.85);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(20px);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .topbar-brand { display: flex; align-items: center; gap: 0.6rem; }
+    .topbar-brand .dot {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: linear-gradient(135deg, #6c63ff, #8b5cf6);
+      display: flex; align-items: center; justify-content: center; font-size: 0.9rem;
+    }
+    .topbar-brand span { font-weight: 700; font-size: 1rem; }
+    .topbar-right { display: flex; align-items: center; gap: 0.75rem; }
+    .role-badge {
+      padding: 0.25rem 0.75rem; border-radius: 20px;
+      font-size: 0.73rem; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;
+    }
+    .role-ADMIN   { background: rgba(251,191,36,0.15); color: var(--warning); border: 1px solid rgba(251,191,36,0.3); }
+    .role-STAFF   { background: rgba(108,99,255,0.15); color: #a99fff; border: 1px solid rgba(108,99,255,0.3); }
+    .role-STUDENT { background: rgba(34,211,165,0.15); color: var(--success); border: 1px solid rgba(34,211,165,0.3); }
+
+    /* Tab Nav */
+    .tabnav {
+      display: flex; align-items: center; gap: 0.25rem;
+      padding: 0.75rem 1.75rem;
+      background: rgba(10,15,30,0.6);
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+    }
+    .tabnav::-webkit-scrollbar { display: none; }
+    .tab-btn {
+      padding: 0.45rem 1rem; border-radius: 8px; border: none;
+      background: transparent; color: var(--muted);
+      font-family: inherit; font-size: 0.83rem; font-weight: 500;
+      cursor: pointer; white-space: nowrap;
+      transition: all 0.18s;
+    }
+    .tab-btn:hover   { color: var(--text); background: rgba(255,255,255,0.05); }
+    .tab-btn.active  { background: rgba(108,99,255,0.2); color: var(--primary); }
+
+    /* Main content */
+    .main { flex: 1; padding: 1.75rem; max-width: 900px; margin: 0 auto; width: 100%; }
+
+    /* Section panels */
+    .panel { display: none; animation: fadeUp 0.3s ease; }
+    .panel.active { display: block; }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+
+    .panel-title {
+      font-size: 1.2rem; font-weight: 700; margin-bottom: 1.25rem;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .panel-title span { font-size: 1.1rem; }
+
+    /* ── Grid ── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+    @media (max-width: 640px) { .grid-2 { grid-template-columns: 1fr; } }
+
+    /* ── Stat Cards ── */
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .stat-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.25rem;
+      display: flex; flex-direction: column; gap: 0.3rem;
+    }
+    .stat-card .label { font-size: 0.78rem; color: var(--muted); font-weight: 500; }
+    .stat-card .value { font-size: 1.8rem; font-weight: 700; }
+
+    /* ── Table ── */
+    .table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; }
+    thead { background: rgba(255,255,255,0.04); }
+    th { padding: 0.75rem 1rem; text-align: left; font-size: 0.78rem; color: var(--muted); font-weight: 600; letter-spacing: 0.3px; text-transform: uppercase; white-space: nowrap; }
+    td { padding: 0.75rem 1rem; font-size: 0.87rem; border-top: 1px solid var(--border); }
+    tbody tr:hover { background: rgba(255,255,255,0.03); }
+
+    /* ── Attendance Toggle ── */
+    .att-toggle {
+      display: inline-flex; border-radius: 8px; overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .att-toggle button {
+      padding: 0.35rem 0.8rem; border: none; background: transparent;
+      color: var(--muted); font-family: inherit; font-size: 0.8rem;
+      font-weight: 600; cursor: pointer; transition: all 0.18s;
+    }
+    .att-toggle button.present { color: var(--success); background: rgba(34,211,165,0.12); }
+    .att-toggle button.absent  { color: var(--danger);  background: rgba(255,94,125,0.12); }
+
+    /* ── Progress bar ── */
+    .progress-bar { background: rgba(255,255,255,0.08); border-radius: 999px; height: 8px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--primary), var(--success)); transition: width 0.6s ease; }
+
+    /* ── Cred box ── */
+    .cred-box {
+      background: rgba(34,211,165,0.07);
+      border: 1px solid rgba(34,211,165,0.25);
+      border-radius: 12px; padding: 1.2rem; margin-top: 1rem;
+    }
+    .cred-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; }
+    .cred-row:last-child { margin-bottom: 0; }
+    .cred-val { font-family: monospace; font-size: 1rem; color: var(--success); letter-spacing: 1px; }
+    .copy-btn {
+      background: none; border: 1px solid rgba(34,211,165,0.4);
+      border-radius: 6px; color: var(--success); cursor: pointer;
+      font-size: 0.72rem; padding: 0.18rem 0.5rem;
+      transition: background 0.18s;
+    }
+    .copy-btn:hover { background: rgba(34,211,165,0.12); }
+
+    /* ── Session info ── */
+    .session-banner {
+      background: linear-gradient(135deg, rgba(108,99,255,0.15), rgba(34,211,165,0.08));
+      border: 1px solid rgba(108,99,255,0.3);
+      border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1.25rem;
+    }
+    .live-dot {
+      display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+      background: var(--success); margin-right: 6px;
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.5; transform:scale(1.5); } }
+
+    /* ── Loader ── */
+    .spinner {
+      width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.15);
+      border-top-color: var(--primary); border-radius: 50%;
+      animation: spin 0.7s linear infinite; display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-row { text-align: center; padding: 2rem; color: var(--muted); }
+
+    /* ── Profile card ── */
+    .profile-header {
+      display: flex; align-items: center; gap: 1.25rem; margin-bottom: 1.5rem;
+    }
+    .avatar {
+      width: 64px; height: 64px; border-radius: 16px;
+      background: linear-gradient(135deg, #6c63ff, #8b5cf6);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.6rem; font-weight: 700; flex-shrink: 0;
+    }
+    .profile-info h2 { font-size: 1.15rem; font-weight: 700; }
+    .profile-info p  { font-size: 0.83rem; color: var(--muted); margin-top: 0.2rem; }
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .info-item { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 10px; padding: 0.75rem 1rem; }
+    .info-item .key { font-size: 0.75rem; color: var(--muted); font-weight: 500; margin-bottom: 0.2rem; }
+    .info-item .val { font-size: 0.92rem; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<!-- ════════════════════════════
+     LOGIN PAGE
+════════════════════════════ -->
+<div id="login-page">
+  <div class="login-box">
+    <div class="login-brand">
+      <div class="icon">🎓</div>
+      <h1>Smart Attendance</h1>
+      <p>Role-based attendance management system</p>
+    </div>
+    <div class="card">
+      <div class="form-group">
+        <label>Username</label>
+        <input id="login-username" type="text" placeholder="Enter your username" autocomplete="username"/>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input id="login-password" type="password" placeholder="Enter your password" autocomplete="current-password"/>
+      </div>
+      <button id="login-btn" class="btn btn-primary w-full" onclick="doLogin()" style="justify-content:center;margin-top:0.5rem;">
+        Sign In
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════
+     APP SHELL
+════════════════════════════ -->
+<div id="app-shell" style="flex-direction:column;">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-brand">
+      <div class="dot">🎓</div>
+      <span>Smart Attendance</span>
+    </div>
+    <div class="topbar-right">
+      <span class="role-badge" id="role-badge"></span>
+      <span class="text-sm text-muted" id="topbar-username"></span>
+      <button class="btn btn-outline btn-sm" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+
+  <!-- Tab Navigation -->
+  <div class="tabnav" id="tabnav"></div>
+
+  <!-- Main Content -->
+  <div class="main">
+
+    <!-- ── ADMIN: Create Student ── -->
+    <div class="panel" id="panel-create-student">
+      <div class="panel-title"><span>👤</span> Create Student</div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="form-group">
+            <label>Full Name</label>
+            <input id="cs-name" type="text" placeholder="e.g. Rajesh Kumar"/>
+          </div>
+          <div class="form-group">
+            <label>Register No.</label>
+            <input id="cs-regno" type="text" placeholder="e.g. 21CS001"/>
+          </div>
+          <div class="form-group">
+            <label>Class Name</label>
+            <input id="cs-class" type="text" placeholder="e.g. CSE-A"/>
+          </div>
+          <div class="form-group">
+            <label for="cs-batch">Batch</label>
+            <select id="cs-batch" required>
+              <option value="">Select batch</option>
+            </select>
+          </div>
+          <button class="btn btn-primary w-full" onclick="createStudent()" style="justify-content:center;">
+            Create Student
+          </button>
+          <div id="cs-result" class="hidden"></div>
+        </div>
+        <div class="card" style="color:var(--muted);font-size:0.87rem;line-height:1.7;">
+          <p class="font-semibold text-sm" style="color:var(--text);margin-bottom:0.75rem;">📌 How it works</p>
+          <p>Fill in the student details and click <strong style="color:var(--text);">Create Student</strong>.</p>
+          <br/>
+          <p>The system will auto-generate a unique <strong style="color:var(--text);">username</strong> and a secure <strong style="color:var(--text);">password</strong> for the student to log in.</p>
+          <br/>
+          <p>Share the credentials with the student securely.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ADMIN: Create Staff ── -->
+    <div class="panel" id="panel-create-staff">
+      <div class="panel-title"><span>🧑‍🏫</span> Create Staff</div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="form-group">
+            <label>Full Name</label>
+            <input id="cf-name" type="text" placeholder="e.g. Dr. Meena S"/>
+          </div>
+          <div class="form-group">
+            <label>Staff ID</label>
+            <input id="cf-id" type="text" placeholder="e.g. STF2024001"/>
+          </div>
+          <button class="btn btn-primary w-full" onclick="createStaff()" style="justify-content:center;">
+            Create Staff
+          </button>
+          <div id="cf-result" class="hidden"></div>
+        </div>
+        <div class="card" style="color:var(--muted);font-size:0.87rem;line-height:1.7;">
+          <p class="font-semibold text-sm" style="color:var(--text);margin-bottom:0.75rem;">📌 How it works</p>
+          <p>Enter the staff member's name and unique Staff ID.</p>
+          <br/>
+          <p>Credentials will be auto-generated. Share them securely with the staff member.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ADMIN: Create Subject ── -->
+    <div class="panel" id="panel-create-subject">
+      <div class="panel-title"><span>📚</span> Create Subject</div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="form-group">
+            <label>Subject Code</label>
+            <input id="csub-code" type="text" placeholder="e.g. CS301"/>
+          </div>
+          <div class="form-group">
+            <label>Subject Name</label>
+            <input id="csub-name" type="text" placeholder="e.g. Database Systems"/>
+          </div>
+          <div class="form-group">
+            <label>Class Name</label>
+            <input id="csub-class" type="text" placeholder="e.g. CSE-A"/>
+          </div>
+          <button class="btn btn-primary w-full" onclick="createSubject()" style="justify-content:center;">Create Subject</button>
+          <div id="csub-result" class="hidden"></div>
+        </div>
+        <div class="card" style="color:var(--muted);font-size:0.87rem;line-height:1.7;">
+          <p class="font-semibold text-sm" style="color:var(--text);margin-bottom:0.75rem;">📌 Class subjects</p>
+          <p>Subjects are grouped by class name.</p>
+          <br/>
+          <p>Staff can choose a class in the dashboard to see its subjects.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ADMIN: Create Batch ── -->
+    <div class="panel" id="panel-create-batch">
+      <div class="panel-title"><span>🎓</span> Create Batch</div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="form-group">
+            <label for="cb-name">Batch Name</label>
+            <input id="cb-name" type="text" placeholder="e.g. 2029-2033" maxlength="20"/>
+          </div>
+          <button class="btn btn-primary w-full" onclick="createBatch()" style="justify-content:center;">Create Batch</button>
+          <div id="cb-result" class="hidden"></div>
+        </div>
+        <div class="card" style="color:var(--muted);font-size:0.87rem;line-height:1.7;">
+          <p class="font-semibold text-sm" style="color:var(--text);margin-bottom:0.75rem;">📌 Batch format</p>
+          <p>Use the admission year and graduation year, for example <strong style="color:var(--text);">2029-2033</strong>.</p>
+          <br/>
+          <p>New batches can be added here without changing the application code.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ADMIN: Weekly Report ── -->
+    <div class="panel" id="panel-weekly-report">
+      <div class="panel-title"><span>📊</span> Weekly Report</div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="form-group">
+            <label for="wr-class">Class Name</label>
+            <input id="wr-class" type="text" placeholder="e.g. III IT-B"/>
+          </div>
+          <div class="form-group">
+            <label for="wr-batch">Batch</label>
+            <select id="wr-batch" required>
+              <option value="">Select batch</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="wr-start">Start Date</label>
+            <input id="wr-start" type="date" required/>
+          </div>
+          <div class="form-group">
+            <label for="wr-end">End Date</label>
+            <input id="wr-end" type="date" required/>
+          </div>
+          <button class="btn btn-primary w-full" onclick="downloadWeeklyReport()" style="justify-content:center;">
+            Download Excel Report
+          </button>
+        </div>
+        <div class="card" style="color:var(--muted);font-size:0.87rem;line-height:1.7;">
+          <p class="font-semibold text-sm" style="color:var(--text);margin-bottom:0.75rem;">📌 Report filters</p>
+          <p>Select a class, batch, and date range. The report checks every period in the range.</p>
+          <br/>
+          <p>The existing Excel structure is preserved. The OD column remains empty.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── STAFF: Profile ── -->
+    <div class="panel" id="panel-staff-profile">
+      <div class="panel-title"><span>🪪</span> My Profile</div>
+      <div class="card" id="staff-profile-content">
+        <div class="loading-row"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+    <!-- ── STAFF: Dashboard ── -->
+    <div class="panel" id="panel-staff-dashboard">
+      <div class="panel-title"><span>📊</span> Dashboard</div>
+      <div class="card" style="margin-bottom:1.25rem;">
+        <div class="panel-title" style="font-size:1rem;margin-bottom:1rem;"><span>🎯</span> Choose Class and Subject</div>
+        <div class="grid-2">
+          <div class="form-group" style="margin-bottom:0;">
+            <label for="dash-class">Class Name</label>
+            <select id="dash-class" onchange="loadClassSubjects(this.value)"><option value="">Select a class</option></select>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label for="dash-subject">Subject</label>
+            <select id="dash-subject" onchange="selectDashboardSubject(this.value)" disabled><option value="">Select a class first</option></select>
+          </div>
+        </div>
+        <button class="btn btn-success" onclick="useDashboardSelection()" style="margin-top:1rem;">▶️ Start Attendance</button>
+      </div>
+      <div id="dash-content">
+        <div class="loading-row"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+    <!-- ── STAFF: Start Session ── -->
+    <div class="panel" id="panel-start-session">
+      <div class="panel-title"><span>▶️</span> Start Session</div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="form-group">
+            <label>Class Name</label>
+            <select id="ss-class" onchange="loadSessionSubjects(this.value)"><option value="">Select a class</option></select>
+          </div>
+          <div class="form-group">
+            <label>Subject</label>
+            <select id="ss-subject" disabled><option value="">Select a class first</option></select>
+          </div>
+          <button class="btn btn-success w-full" onclick="startSession()" style="justify-content:center;">
+            Start Session
+          </button>
+        </div>
+        <div class="card" style="color:var(--muted);font-size:0.87rem;line-height:1.7;">
+          <p class="font-semibold text-sm" style="color:var(--text);margin-bottom:0.75rem;">⏰ Period Schedule</p>
+          <p>P1 — 09:00 – 09:50</p>
+          <p>P2 — 09:50 – 10:40</p>
+          <p>P3 — 10:55 – 11:45</p>
+          <p>P4 — 11:45 – 12:35</p>
+          <p>P5 — 13:20 – 14:10</p>
+          <p>P6 — 14:10 – 15:00</p>
+          <p>P7 — 15:10 – 15:55</p>
+          <p>P8 — 15:55 – 16:40</p>
+          <br/>
+          <p>Sessions can only be started during an active period window.</p>
+        </div>
+      </div>
+      <div id="session-students" class="hidden" style="margin-top:1.5rem;">
+        <div class="session-banner">
+          <span class="live-dot"></span>
+          <strong id="session-info-text">Session Active</strong>
+          <span id="session-meta" class="text-sm text-muted" style="margin-left:0.5rem;"></span>
+        </div>
+        <div class="panel-title" style="margin-bottom:1rem;"><span>✅</span> Mark Attendance</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Student Name</th>
+                <th>Register No.</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="att-tbody"></tbody>
+          </table>
+        </div>
+        <div style="margin-top:1rem;display:flex;gap:0.75rem;flex-wrap:wrap;">
+          <button class="btn btn-outline btn-sm" onclick="markAll('Present')">✅ Mark All Present</button>
+          <button class="btn btn-outline btn-sm" onclick="markAll('Absent')">❌ Mark All Absent</button>
+          <button class="btn btn-success" onclick="saveAttendance()" style="margin-left:auto;">💾 Save Attendance</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── STUDENT: Profile ── -->
+    <div class="panel" id="panel-student-profile">
+      <div class="panel-title"><span>🪪</span> My Profile</div>
+      <div class="card" id="student-profile-content">
+        <div class="loading-row"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+    <!-- ── STUDENT: Attendance ── -->
+    <div class="panel" id="panel-student-attendance">
+      <div class="panel-title"><span>📋</span> My Attendance</div>
+      <div id="att-summary" class="stat-grid hidden"></div>
+      <div id="att-records" class="table-wrap hidden">
+        <table>
+          <thead>
+            <tr><th>Period</th><th>Subject</th><th>Status</th></tr>
+          </thead>
+          <tbody id="att-records-body"></tbody>
+        </table>
+      </div>
+      <div class="loading-row" id="att-loading"><div class="spinner"></div></div>
+    </div>
+
+  </div><!-- /.main -->
+</div><!-- /#app-shell -->
+
+<script>
+  const API = 'http://127.0.0.1:8000/api';
+  let accessToken = localStorage.getItem('access') || null;
+  let userRole    = localStorage.getItem('role')   || null;
+  let currentSessionId = null;
+  let sessionStudents  = [];
+
+  /* ── Init ── */
+  window.onload = () => {
+    if (accessToken && userRole) {
+      showApp();
+    }
+    document.getElementById('login-password')
+      .addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+  };
+
+  /* ══════════════════════
+     AUTH
+  ══════════════════════ */
+  async function doLogin() {
+    const username = document.getElementById('login-username').value.trim();
+    const password = document.getElementById('login-password').value;
+    if (!username || !password) { toast('Enter username and password', 'error'); return; }
+
+    const btn = document.getElementById('login-btn');
+    btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Signing in…';
+
+    const res = await api('POST', '/login/', { username, password }, false);
+    btn.disabled = false; btn.innerHTML = 'Sign In';
+
+    if (res.ok) {
+      accessToken = res.data.access;
+      userRole    = res.data.role;
+      localStorage.setItem('access',   accessToken);
+      localStorage.setItem('role',     userRole);
+      localStorage.setItem('username', username);
+      toast('Login successful!', 'success');
+      showApp();
+    } else {
+      toast(res.data.message || 'Login failed', 'error');
+    }
+  }
+
+  function doLogout() {
+    localStorage.clear();
+    accessToken = null; userRole = null;
+    document.getElementById('app-shell').style.display  = 'none';
+    document.getElementById('login-page').style.display = 'flex';
+    document.getElementById('login-username').value = '';
+    document.getElementById('login-password').value = '';
+    toast('Logged out', 'info');
+  }
+
+  /* ══════════════════════
+     APP SHELL
+  ══════════════════════ */
+  const TABS = {
+    ADMIN: [
+      { id: 'create-student', label: '👤 Create Student' },
+      { id: 'create-staff',   label: '🧑‍🏫 Create Staff'   },
+      { id: 'create-subject', label: '📚 Create Subject' },
+      { id: 'create-batch',   label: '🎓 Create Batch'   },
+      { id: 'weekly-report',  label: '📊 Weekly Report'  },
+    ],
+    STAFF: [
+      { id: 'staff-profile',   label: '🪪 Profile'       },
+      { id: 'staff-dashboard', label: '📊 Dashboard'     },
+      { id: 'start-session',   label: '▶️ Start Session' },
+    ],
+    STUDENT: [
+      { id: 'student-profile',    label: '🪪 Profile'    },
+      { id: 'student-attendance', label: '📋 Attendance' },
+    ],
+  };
+
+  function showApp() {
+    document.getElementById('login-page').style.display   = 'none';
+    document.getElementById('app-shell').style.display    = 'flex';
+
+    const badge = document.getElementById('role-badge');
+    badge.textContent = userRole;
+    badge.className   = `role-badge role-${userRole}`;
+    document.getElementById('topbar-username').textContent =
+      localStorage.getItem('username') || '';
+
+    buildTabs();
+    activateTab(TABS[userRole][0].id);
+
+    if (userRole === 'STAFF') {
+      loadStaffProfile();
+      loadStaffDashboard();
+      loadStaffClasses();
+    } else if (userRole === 'ADMIN') {
+      loadBatches();
+    } else if (userRole === 'STUDENT') {
+      loadStudentProfile();
+      loadStudentAttendance();
+    }
+  }
+
+  function buildTabs() {
+    const nav   = document.getElementById('tabnav');
+    nav.innerHTML = '';
+    (TABS[userRole] || []).forEach(t => {
+      const btn = document.createElement('button');
+      btn.className   = 'tab-btn';
+      btn.id          = `tab-${t.id}`;
+      btn.textContent = t.label;
+      btn.onclick     = () => activateTab(t.id);
+      nav.appendChild(btn);
+    });
+  }
+
+  function activateTab(id) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    const tabBtn = document.getElementById(`tab-${id}`);
+    const panel  = document.getElementById(`panel-${id}`);
+    if (tabBtn) tabBtn.classList.add('active');
+    if (panel)  panel.classList.add('active');
+  }
+
+  /* ══════════════════════
+     ADMIN: CREATE STUDENT
+  ══════════════════════ */
+  async function createStudent() {
+    const body = {
+      student_name: document.getElementById('cs-name').value.trim(),
+      register_no:  document.getElementById('cs-regno').value.trim(),
+      class_name:   document.getElementById('cs-class').value.trim(),
+      batch:        document.getElementById('cs-batch').value,
+    };
+    if (!body.student_name || !body.register_no || !body.class_name || !body.batch) {
+      toast('All fields are required', 'error'); return;
+    }
+    const res = await api('POST', '/create-student/', body);
+    const box = document.getElementById('cs-result');
+    if (res.ok) {
+      toast('Student created!', 'success');
+      box.classList.remove('hidden');
+      box.innerHTML = credBox(res.data.username, res.data.password, res.data.message);
+      document.getElementById('cs-name').value = '';
+      document.getElementById('cs-regno').value = '';
+      document.getElementById('cs-class').value = '';
+      document.getElementById('cs-batch').value = '';
+    } else {
+      toast(JSON.stringify(res.data), 'error');
+    }
+  }
+
+  async function loadBatches() {
+    const select = document.getElementById('cs-batch');
+    const reportSelect = document.getElementById('wr-batch');
+    const res = await api('GET', '/batches/');
+    if (!res.ok) {
+      select.innerHTML = '<option value="">Unable to load batches</option>';
+      reportSelect.innerHTML = '<option value="">Unable to load batches</option>';
+      return;
+    }
+
+    select.innerHTML = '<option value="">Select batch</option>';
+    reportSelect.innerHTML = '<option value="">Select batch</option>';
+    res.data.forEach(batch => {
+      select.innerHTML += `<option value="${batch.id}">${batch.name}</option>`;
+      reportSelect.innerHTML += `<option value="${batch.id}">${batch.name}</option>`;
+    });
+  }
+
+  async function downloadWeeklyReport() {
+    const className = document.getElementById('wr-class').value.trim();
+    const batch = document.getElementById('wr-batch').value;
+    const startDate = document.getElementById('wr-start').value;
+    const endDate = document.getElementById('wr-end').value;
+
+    if (!className || !batch || !startDate || !endDate) {
+      toast('All report fields are required', 'error'); return;
+    }
+    if (startDate > endDate) {
+      toast('Start date must be before end date', 'error'); return;
+    }
+
+    const query = new URLSearchParams({
+      class_name: className,
+      batch,
+      start_date: startDate,
+      end_date: endDate,
+    });
+
+    try {
+      const response = await fetch(`${API}/weekly-report/excel/?${query}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        toast(error.message || 'Unable to generate report', 'error'); return;
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `weekly_report_${startDate}_${endDate}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      toast('Excel report downloaded', 'success');
+    } catch (error) {
+      toast('Network error — is the server running?', 'error');
+    }
+  }
+
+  /* ══════════════════════
+     ADMIN: CREATE STAFF
+  ══════════════════════ */
+  async function createStaff() {
+    const body = {
+      staff_name: document.getElementById('cf-name').value.trim(),
+      staff_id:   document.getElementById('cf-id').value.trim(),
+    };
+    if (!body.staff_name || !body.staff_id) { toast('All fields are required', 'error'); return; }
+    const res = await api('POST', '/create-staff/', body);
+    const box = document.getElementById('cf-result');
+    if (res.ok) {
+      toast('Staff created!', 'success');
+      box.classList.remove('hidden');
+      box.innerHTML = credBox(res.data.username, res.data.password, res.data.message);
+      document.getElementById('cf-name').value = '';
+      document.getElementById('cf-id').value = '';
+    } else {
+      toast(JSON.stringify(res.data), 'error');
+    }
+  }
+
+  async function createSubject() {
+    const body = {
+      subject_code: document.getElementById('csub-code').value.trim(),
+      subject_name: document.getElementById('csub-name').value.trim(),
+      class_name: document.getElementById('csub-class').value.trim(),
+    };
+    if (!body.subject_code || !body.subject_name || !body.class_name) {
+      toast('All fields are required', 'error'); return;
+    }
+    const res = await api('POST', '/create-subject/', body);
+    const box = document.getElementById('csub-result');
+    if (res.ok) {
+      toast('Subject created!', 'success');
+      box.classList.remove('hidden');
+      box.innerHTML = `<div class="cred-box"><p class="text-sm font-semibold text-success">✅ ${res.data.message}</p><p class="text-sm text-muted" style="margin-top:0.5rem;">${res.data.subject.subject_code} · ${res.data.subject.subject_name} · ${res.data.subject.class_name}</p></div>`;
+      document.getElementById('csub-code').value = '';
+      document.getElementById('csub-name').value = '';
+      document.getElementById('csub-class').value = '';
+    } else {
+      toast(res.data.message || JSON.stringify(res.data), 'error');
+    }
+  }
+
+  async function createBatch() {
+    const name = document.getElementById('cb-name').value.trim();
+    if (!name) { toast('Batch name is required', 'error'); return; }
+
+    const res = await api('POST', '/create-batch/', { name });
+    const box = document.getElementById('cb-result');
+    if (res.ok) {
+      toast('Batch created!', 'success');
+      box.classList.remove('hidden');
+      box.innerHTML = `<div class="cred-box"><p class="text-sm font-semibold text-success">✅ ${res.data.message}</p><p class="text-sm text-muted" style="margin-top:0.5rem;">${res.data.batch.name}</p></div>`;
+      document.getElementById('cb-name').value = '';
+    } else {
+      toast(res.data.name?.[0] || res.data.message || JSON.stringify(res.data), 'error');
+    }
+  }
+
+  function credBox(username, password, msg) {
+    return `
+      <div class="cred-box" style="margin-top:1rem;">
+        <p class="text-sm font-semibold text-success" style="margin-bottom:0.75rem;">✅ ${msg}</p>
+        <div class="cred-row">
+          <span class="text-xs text-muted">Username</span>
+          <div style="display:flex;align-items:center;gap:0.5rem;">
+            <span class="cred-val">${username}</span>
+            <button class="copy-btn" onclick="copyText('${username}')">Copy</button>
+          </div>
+        </div>
+        <div class="cred-row">
+          <span class="text-xs text-muted">Password</span>
+          <div style="display:flex;align-items:center;gap:0.5rem;">
+            <span class="cred-val">${password}</span>
+            <button class="copy-btn" onclick="copyText('${password}')">Copy</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function copyText(t) {
+    navigator.clipboard.writeText(t).then(() => toast('Copied!', 'info'));
+  }
+
+  /* ══════════════════════
+     STAFF PROFILE
+  ══════════════════════ */
+  async function loadStaffProfile() {
+    const res = await api('GET', '/staff/profile/');
+    const el  = document.getElementById('staff-profile-content');
+    if (!res.ok) { el.innerHTML = `<p class="text-danger">Failed to load profile.</p>`; return; }
+    const d = res.data;
+    el.innerHTML = `
+      <div class="profile-header">
+        <div class="avatar">${d.staff_name[0].toUpperCase()}</div>
+        <div class="profile-info">
+          <h2>${d.staff_name}</h2>
+          <p>${d.role}</p>
+        </div>
+      </div>
+      <div class="info-grid">
+        <div class="info-item"><div class="key">Username</div><div class="val">${d.username}</div></div>
+        <div class="info-item"><div class="key">Staff ID</div><div class="val">${d.staff_id}</div></div>
+        <div class="info-item"><div class="key">Role</div><div class="val">${d.role}</div></div>
+      </div>`;
+  }
+
+  /* ══════════════════════
+     STAFF DASHBOARD
+  ══════════════════════ */
+  async function loadStaffDashboard() {
+    const res = await api('GET', '/staff/dashboard/');
+    const el  = document.getElementById('dash-content');
+    if (!res.ok) { el.innerHTML = `<p class="text-danger">Error loading dashboard.</p>`; return; }
+    const d = res.data;
+    if (d.message === 'No Active Session') {
+      el.innerHTML = `
+        <div class="card" style="text-align:center;padding:2.5rem;">
+          <div style="font-size:2.5rem;margin-bottom:0.75rem;">🕐</div>
+          <h3 style="font-size:1rem;font-weight:600;">No Active Period</h3>
+          <p class="text-muted text-sm" style="margin-top:0.35rem;">No class is scheduled at this time.</p>
+        </div>`;
+    } else {
+      el.innerHTML = `
+        <div class="session-banner">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:0.75rem;">
+            <div>
+              <p class="text-xs text-muted" style="margin-bottom:0.3rem;"><span class="live-dot"></span>LIVE SESSION</p>
+              <h2 style="font-size:1.1rem;font-weight:700;">Period ${d.period || '—'}</h2>
+            </div>
+            <div style="text-align:right;">
+              <p class="text-xs text-muted">TIME</p>
+              <p class="font-semibold">${d.start_time || '—'} – ${d.end_time || '—'}</p>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="color:var(--muted);font-size:0.87rem;">
+          Go to <strong style="color:var(--text);">"Start Session"</strong> tab to mark attendance for this period.
+        </div>`;
+    }
+  }
+
+  async function loadStaffClasses() {
+    const res = await api('GET', '/staff/classes/');
+    if (!res.ok) { toast(res.data.message || 'Failed to load classes', 'error'); return; }
+    ['dash-class', 'ss-class'].forEach(id => {
+      const select = document.getElementById(id);
+      if (!select) return;
+      select.innerHTML = '<option value="">Select a class</option>';
+      res.data.classes.forEach(className => {
+        select.innerHTML += `<option value="${className}">${className}</option>`;
+      });
+    });
+  }
+
+  async function loadClassSubjects(className) {
+    const subjectSelect = document.getElementById('dash-subject');
+    await loadSubjectsInto(subjectSelect, className);
+  }
+
+  async function loadSessionSubjects(className) {
+    const subjectSelect = document.getElementById('ss-subject');
+    await loadSubjectsInto(subjectSelect, className);
+  }
+
+  async function loadSubjectsInto(subjectSelect, className) {
+    subjectSelect.innerHTML = '<option value="">Loading subjects…</option>';
+    subjectSelect.disabled = true;
+    if (!className) {
+      subjectSelect.innerHTML = '<option value="">Select a class first</option>';
+      return;
+    }
+    const res = await api('GET', `/staff/class-subjects/?class_name=${encodeURIComponent(className)}`);
+    if (!res.ok) {
+      subjectSelect.innerHTML = '<option value="">Unable to load subjects</option>';
+      return;
+    }
+    subjectSelect.innerHTML = '<option value="">Select a subject</option>';
+    res.data.subjects.forEach(subject => {
+      subjectSelect.innerHTML += `<option value="${subject.id}">${subject.subject_code} · ${subject.subject_name}</option>`;
+    });
+    subjectSelect.disabled = res.data.subjects.length === 0;
+    if (res.data.subjects.length === 0) subjectSelect.innerHTML = '<option value="">No subjects for this class</option>';
+  }
+
+  function selectDashboardSubject(subjectId) {
+    document.getElementById('ss-subject').value = subjectId;
+  }
+
+  async function useDashboardSelection() {
+    const className = document.getElementById('dash-class').value;
+    const subjectId = document.getElementById('dash-subject').value;
+    if (!className || !subjectId) { toast('Choose a class and subject first', 'error'); return; }
+    document.getElementById('ss-class').value = className;
+    await loadSessionSubjects(className);
+    document.getElementById('ss-subject').value = subjectId;
+    activateTab('start-session');
+  }
+
+  /* ══════════════════════
+     STAFF: START SESSION
+  ══════════════════════ */
+  async function startSession() {
+    const class_name  = document.getElementById('ss-class').value;
+    const subject_id  = document.getElementById('ss-subject').value;
+    if (!class_name || !subject_id) { toast('Class name and Subject ID are required', 'error'); return; }
+
+    const res = await api('POST', '/staff/start-session/', { class_name, subject_id: parseInt(subject_id, 10) });
+    if (!res.ok) { toast(res.data.message || 'Failed to start session', 'error'); return; }
+
+    const d = res.data;
+    if (!d.session_id || !d.period || !d.class_name || !d.subject) {
+      toast('The server returned incomplete session details', 'error');
+      return;
+    }
+    currentSessionId = d.session_id;
+    sessionStudents  = d.students || [];
+
+    toast(`Session started — Période ${d.period}`, 'success');
+
+    document.getElementById('session-info-text').textContent =
+      `${d.subject} · ${d.class_name}`;
+    document.getElementById('session-meta').textContent =
+      `Period ${d.period}  ·  Session #${d.session_id}`;
+
+    const tbody = document.getElementById('att-tbody');
+    tbody.innerHTML = '';
+    sessionStudents.forEach((s, i) => {
+      tbody.innerHTML += `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${s.student_name}</td>
+          <td>${s.register_no}</td>
+          <td>
+            <div class="att-toggle" id="toggle-${s.id}">
+              <button onclick="setStatus(${s.id},'Present')" id="btn-present-${s.id}">✅ Present</button>
+              <button onclick="setStatus(${s.id},'Absent')"  id="btn-absent-${s.id}">❌ Absent</button>
+            </div>
+          </td>
+        </tr>`;
+    });
+
+    // Default: all present
+    sessionStudents.forEach(s => setStatus(s.id, 'Present'));
+
+    document.getElementById('session-students').classList.remove('hidden');
+    if (sessionStudents.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:1.5rem;">No students found in this class.</td></tr>';
+    }
+  }
+
+  function setStatus(studentId, status) {
+    const pBtn = document.getElementById(`btn-present-${studentId}`);
+    const aBtn = document.getElementById(`btn-absent-${studentId}`);
+    pBtn.className = status === 'Present' ? 'present' : '';
+    aBtn.className = status === 'Absent'  ? 'absent'  : '';
+    const s = sessionStudents.find(x => x.id === studentId);
+    if (s) s._status = status;
+  }
+
+  function markAll(status) {
+    sessionStudents.forEach(s => setStatus(s.id, status));
+  }
+
+  async function saveAttendance() {
+    if (!currentSessionId) { toast('No active session', 'error'); return; }
+    const attendance = sessionStudents.map(s => ({
+      student_id: s.id,
+      status: s._status || 'Absent'
+    }));
+    const res = await api('POST', '/staff/save-attendance/', {
+      session_id: currentSessionId,
+      attendance
+    });
+    if (res.ok) {
+      toast(res.data.message || 'Attendance saved!', 'success');
+      document.getElementById('session-students').classList.add('hidden');
+      currentSessionId = null; sessionStudents = [];
+      document.getElementById('ss-class').value   = '';
+      document.getElementById('ss-subject').value = '';
+    } else {
+      toast(res.data.message || 'Failed to save attendance', 'error');
+    }
+  }
+
+  /* ══════════════════════
+     STUDENT PROFILE
+  ══════════════════════ */
+  async function loadStudentProfile() {
+    const res = await api('GET', '/student/profile/');
+    const el  = document.getElementById('student-profile-content');
+    if (!res.ok) { el.innerHTML = `<p class="text-danger">Failed to load profile.</p>`; return; }
+    const d = res.data;
+    el.innerHTML = `
+      <div class="profile-header">
+        <div class="avatar">${d.student_name[0].toUpperCase()}</div>
+        <div class="profile-info">
+          <h2>${d.student_name}</h2>
+          <p>${d.role} — ${d.class_name}</p>
+        </div>
+      </div>
+      <div class="info-grid">
+        <div class="info-item"><div class="key">Username</div><div class="val">${d.username}</div></div>
+        <div class="info-item"><div class="key">Register No.</div><div class="val">${d.register_no}</div></div>
+        <div class="info-item"><div class="key">Class</div><div class="val">${d.class_name}</div></div>
+        <div class="info-item"><div class="key">Role</div><div class="val">${d.role}</div></div>
+      </div>`;
+  }
+
+  /* ══════════════════════
+     STUDENT ATTENDANCE
+  ══════════════════════ */
+  async function loadStudentAttendance() {
+    const res = await api('GET', '/student/attendance/');
+    document.getElementById('att-loading').classList.add('hidden');
+    if (!res.ok) { toast('Failed to load attendance', 'error'); return; }
+    const d = res.data;
+    const pct = d.attendance_percentage;
+    const color = pct >= 75 ? 'var(--success)' : pct >= 60 ? 'var(--warning)' : 'var(--danger)';
+
+    document.getElementById('att-summary').innerHTML = `
+      <div class="stat-card">
+        <span class="label">Total Classes</span>
+        <span class="value">${d.total_classes}</span>
+      </div>
+      <div class="stat-card">
+        <span class="label">Present</span>
+        <span class="value text-success">${d.present}</span>
+      </div>
+      <div class="stat-card">
+        <span class="label">Absent</span>
+        <span class="value text-danger">${d.absent}</span>
+      </div>
+      <div class="stat-card" style="grid-column:span 1;">
+        <span class="label">Attendance %</span>
+        <span class="value" style="color:${color}">${pct}%</span>
+        <div class="progress-bar" style="margin-top:0.4rem;">
+          <div class="progress-fill" style="width:${Math.min(pct,100)}%;background:linear-gradient(90deg,${color},${color}88);"></div>
+        </div>
+      </div>`;
+    document.getElementById('att-summary').classList.remove('hidden');
+
+    const tbody = document.getElementById('att-records-body');
+    tbody.innerHTML = '';
+    (d.attendance || []).forEach(r => {
+      const dot   = r.status === 'Present' ? '🟢' : '🔴';
+      const cls   = r.status === 'Present' ? 'text-success' : 'text-danger';
+      tbody.innerHTML += `
+        <tr>
+          <td>Period ${r.period}</td>
+          <td>${r.subject}</td>
+          <td class="${cls}">${dot} ${r.status}</td>
+        </tr>`;
+    });
+    if (!d.attendance || d.attendance.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:1.5rem;">No attendance records yet.</td></tr>`;
+    }
+    document.getElementById('att-records').classList.remove('hidden');
+  }
+
+  /* ══════════════════════
+     HELPERS
+  ══════════════════════ */
+  async function api(method, path, body = null, auth = true) {
+    const headers = { 'Content-Type': 'application/json' };
+    if (auth && accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+    try {
+      const resp = await fetch(`${API}${path}`, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      const data = await resp.json().catch(() => ({}));
+      return { ok: resp.ok, status: resp.status, data };
+    } catch(e) {
+      toast('Network error — is the server running?', 'error');
+      return { ok: false, data: {} };
+    }
+  }
+
+  function toast(msg, type = 'info') {
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.textContent = msg;
+    document.getElementById('toast-container').appendChild(el);
+    setTimeout(() => el.remove(), 3500);
+  }
+</script>
+</body>
+</html>
