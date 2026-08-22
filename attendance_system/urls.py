@@ -15,9 +15,8 @@ from .views import (
     create_subject,
     create_batch,
     list_batches,
-    weekly_report,
-    weekly_report_excel,
 )
+from .report_generation.weekly import weekly_report, weekly_report_excel
 
 urlpatterns = [
 
