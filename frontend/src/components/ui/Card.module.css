@@ -1,0 +1,27 @@
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Top accent bar — used for stat cards */
+.accented {
+  border-top: 3px solid var(--accent-color, var(--primary));
+}
+
+/* Flat variant — no shadow */
+.flat {
+  box-shadow: none;
+}
+
+/* Interactive */
+.interactive {
+  cursor: pointer;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+.interactive:hover {
+  border-color: var(--border2);
+  box-shadow: var(--shadow-md);
+}

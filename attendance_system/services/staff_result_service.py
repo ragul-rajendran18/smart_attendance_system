@@ -90,57 +90,43 @@ def generate_staff_import_result_excel(
     worksheet = workbook.create_sheet(
         "Failed Staff"
     )
-
     worksheet.append([
         "Sheet",
         "Row",
         "Staff ID",
         "Reason",
     ])
-
     for staff in failed_staff:
-
         worksheet.append([
             staff.get(
                 "sheet",
                 "",
             ),
-
             staff.get(
                 "row",
                 "",
             ),
-
             staff.get(
                 "staff_id",
                 "",
             ),
-
             staff.get(
                 "reason",
                 "",
             ),
         ])
-
     # ========================================================
     # COLUMN WIDTH
     # ========================================================
-
     for worksheet in workbook.worksheets:
-
         for column in worksheet.columns:
-
             maximum = 0
-
             letter = (
                 column[0]
                 .column_letter
             )
-
             for cell in column:
-
                 if cell.value is not None:
-
                     maximum = max(
                         maximum,
                         len(
@@ -149,18 +135,15 @@ def generate_staff_import_result_excel(
                             )
                         ),
                     )
-
             worksheet.column_dimensions[
                 letter
             ].width = min(
                 maximum + 2,
                 50,
             )
-
     # ========================================================
     # RETURN
     # ========================================================
-
     output = BytesIO()
 
     workbook.save(output)

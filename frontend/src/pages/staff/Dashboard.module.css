@@ -1,0 +1,70 @@
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  background: var(--surface);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.table thead {
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+}
+
+.table th {
+  padding: 0.65rem 1rem;
+  text-align: left;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 0.72rem 1rem;
+  border-top: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.table tbody tr { transition: background 0.1s; }
+.table tbody tr:hover { background: var(--surface2); }
+
+.viewBtn {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.13s;
+}
+
+.viewBtn:hover {
+  background: #EBF1F0;
+  border-color: #CFDFDC;
+  color: var(--primary);
+}
+
+/* Drill-down panel */
+.detailCard { margin-top: 1.25rem; }
+
+.detailTitle {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text2);
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}

@@ -1,0 +1,73 @@
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (max-width: 768px) {
+  .grid { grid-template-columns: 1fr; }
+}
+
+.formBody {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Help panel */
+.helpHead {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text2);
+  margin-bottom: 0.75rem;
+}
+
+.helpIcon { color: var(--primary); }
+
+.helpText {
+  font-size: 0.83rem;
+  color: var(--muted);
+  line-height: 1.7;
+  margin-bottom: 0.5rem;
+}
+
+.helpText strong {
+  color: var(--text2);
+  font-weight: 600;
+}
+
+/* Batch tag list */
+.tagList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 1.1rem;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.7rem;
+  background: #EBF1F0;
+  border: 1px solid #CFDFDC;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+/* Result flash */
+.resultFlash {
+  margin-top: 0.85rem;
+  padding: 0.65rem 0.9rem;
+  background: var(--success-bg);
+  border: 1px solid var(--success-bd);
+  border-radius: var(--radius-sm);
+  font-size: 0.83rem;
+  color: var(--success);
+  font-weight: 500;
+}

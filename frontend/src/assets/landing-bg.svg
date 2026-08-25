@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="none">
+  <defs>
+    <pattern id="dots" width="26" height="26" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="2" fill="#7F9593"/>
+    </pattern>
+
+    <!-- ── Watermark line icons (stroke-based) ── -->
+    <symbol id="i-cal" viewBox="0 0 48 48">
+      <rect x="7" y="10" width="34" height="30" rx="4"/>
+      <path d="M7 19h34M15 6v8M33 6v8"/>
+      <path d="M17 30l5 5 9-10"/>
+    </symbol>
+    <symbol id="i-clock" viewBox="0 0 48 48">
+      <circle cx="24" cy="24" r="17"/>
+      <path d="M24 14v10l7 5"/>
+    </symbol>
+    <symbol id="i-users" viewBox="0 0 48 48">
+      <circle cx="17" cy="18" r="6"/>
+      <path d="M7 39c0-6.5 4.5-10 10-10s10 3.5 10 10"/>
+      <circle cx="33.5" cy="16.5" r="4.5"/>
+      <path d="M33 27.5c4.8 0 8.5 3 8.5 8"/>
+    </symbol>
+    <symbol id="i-cap" viewBox="0 0 48 48">
+      <path d="M24 9L3 18.5l21 9.5 21-9.5z"/>
+      <path d="M12 23v8.5c0 3 5.4 5.5 12 5.5s12-2.5 12-5.5V23"/>
+      <path d="M43.5 20.5V30"/>
+    </symbol>
+    <symbol id="i-list" viewBox="0 0 48 48">
+      <rect x="9" y="6" width="30" height="36" rx="4"/>
+      <path d="M15 17.5l3 3 5.5-6.5M28 18h6"/>
+      <path d="M15 30.5l3 3 5.5-6.5M28 31h6"/>
+    </symbol>
+    <symbol id="i-id" viewBox="0 0 48 48">
+      <rect x="6" y="11" width="36" height="26" rx="4"/>
+      <circle cx="18" cy="21.5" r="4"/>
+      <path d="M11 31.5c1.5-3.5 4-5 7-5s5.5 1.5 7 5"/>
+      <path d="M30 19.5h8M30 25h8M30 30.5h5"/>
+    </symbol>
+    <symbol id="i-chart" viewBox="0 0 48 48">
+      <path d="M8 8v32h32"/>
+      <path d="M16 32v-7M24 32V16M32 32V21"/>
+    </symbol>
+    <symbol id="i-book" viewBox="0 0 48 48">
+      <path d="M24 12.5c-4-3-9-4-15-4v27.5c6 0 11 1 15 4 4-3 9-4 15-4V8.5c-6 0-11 1-15 4z"/>
+      <path d="M24 12.5V40"/>
+    </symbol>
+  </defs>
+
+  <!-- ── Base ── -->
+  <rect width="1920" height="1080" fill="#F7F8F6"/>
+
+  <!-- ══ Top-right corner cluster ══ -->
+  <path d="M1920 0h-500c140 92 205 214 365 264 78 24 115 70 135 136z" fill="#DCE7E5" opacity="0.55"/>
+  <path d="M1920 0h-340c112 70 148 172 250 218 40 18 68 46 90 86z" fill="#AAB9B7" opacity="0.28"/>
+  <path d="M1920 58c-112 62-158 174-268 234" fill="none" stroke="#5F7775" stroke-width="1.6" opacity="0.35"/>
+  <path d="M1920 132c-88 50-128 148-216 198" fill="none" stroke="#5F7775" stroke-width="1" opacity="0.25"/>
+  <rect x="1638" y="58" width="212" height="146" fill="url(#dots)" opacity="0.45"/>
+  <ellipse cx="1450" cy="240" rx="120" ry="54" fill="#DCE7E5" opacity="0.5" transform="rotate(-14 1450 240)"/>
+
+  <!-- ══ Bottom-left corner cluster ══ -->
+  <path d="M0 1080h480c-130-92-195-212-355-262-78-24-105-72-125-138z" fill="#DCE7E5" opacity="0.55"/>
+  <path d="M0 1080h330c-102-70-138-172-240-218-40-18-68-46-90-86z" fill="#AAB9B7" opacity="0.28"/>
+  <path d="M0 1022c112-62 158-174 268-234" fill="none" stroke="#5F7775" stroke-width="1.6" opacity="0.35"/>
+  <path d="M0 948c88-50 128-148 216-198" fill="none" stroke="#5F7775" stroke-width="1" opacity="0.25"/>
+  <rect x="70" y="876" width="212" height="146" fill="url(#dots)" opacity="0.45"/>
+  <ellipse cx="470" cy="840" rx="120" ry="54" fill="#DCE7E5" opacity="0.5" transform="rotate(-14 470 840)"/>
+
+  <!-- ══ Faint edge accents (kept away from center) ══ -->
+  <ellipse cx="1880" cy="700" rx="150" ry="60" fill="#DCE7E5" opacity="0.4" transform="rotate(12 1880 700)"/>
+  <ellipse cx="60" cy="360" rx="130" ry="52" fill="#DCE7E5" opacity="0.4" transform="rotate(-12 60 360)"/>
+
+  <!-- small decorative arrows -->
+  <g stroke="#5F7775" fill="none" stroke-width="1.4" opacity="0.28" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M1240 950c40-14 84-12 118 8"/>
+    <path d="M1348 946l12 13-18 3"/>
+    <path d="M680 120c-38-16-82-16-116 2"/>
+    <path d="M574 110l-11 15 19 1"/>
+  </g>
+
+  <!-- ══ Watermarks · top edge ══ -->
+  <use href="#i-cap"   x="1180" y="52"  width="88" height="88" opacity="0.12" transform="rotate(0)"/>
+  <use href="#i-cal"   x="1330" y="110" width="66" height="66" opacity="0.13" />
+  <use href="#i-clock" x="1490" y="66"  width="74" height="74" opacity="0.12"/>
+  <use href="#i-chart" x="1770" y="150" width="60" height="60" opacity="0.14"/>
+
+  <!-- ══ Watermarks · right edge ══ -->
+  <use href="#i-id"    x="1826" y="430" width="64" height="64" opacity="0.13"/>
+  <use href="#i-users" x="1798" y="600" width="58" height="58" opacity="0.11"/>
+
+  <!-- ══ Watermarks · left edge ══ -->
+  <use href="#i-book"  x="76"  y="380" width="66" height="66" opacity="0.12"/>
+  <use href="#i-cal"   x="46"  y="540" width="58" height="58" opacity="0.13"/>
+  <use href="#i-list"  x="96"  y="680" width="64" height="64" opacity="0.11"/>
+
+  <!-- ══ Watermarks · bottom edge ══ -->
+  <use href="#i-clock" x="620"  y="986" width="60" height="60" opacity="0.12"/>
+  <use href="#i-id"    x="860"  y="996" width="54" height="54" opacity="0.11"/>
+  <use href="#i-users" x="1090" y="984" width="62" height="62" opacity="0.12"/>
+</svg>

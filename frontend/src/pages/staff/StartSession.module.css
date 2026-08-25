@@ -1,0 +1,172 @@
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+
+.formBody { display: flex; flex-direction: column; gap: 1rem; }
+
+/* Period schedule */
+.schedTitle {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+  margin-bottom: 0.75rem;
+}
+
+.schedList { display: flex; flex-direction: column; }
+
+.schedRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.83rem;
+}
+
+.schedRow:last-child { border-bottom: none; }
+
+.pNum {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--primary);
+  background: #EBF1F0;
+  border: 1px solid #CFDFDC;
+  border-radius: 4px;
+  padding: 0.12rem 0.4rem;
+  min-width: 28px;
+  text-align: center;
+}
+
+.pTime { color: var(--muted); font-size: 0.81rem; }
+
+/* Session banner */
+.banner {
+  background: #EBF1F0;
+  border: 1px solid #CFDFDC;
+  border-radius: var(--radius);
+  padding: 0.9rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.bannerLeft {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.bannerMeta {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.counters {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.countSep { color: var(--border2); }
+
+/* Toolbar */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.toolbar .save { margin-left: auto; }
+
+/* Attendance table */
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.table thead {
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+}
+
+.table th {
+  padding: 0.65rem 1rem;
+  text-align: left;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.table td {
+  padding: 0.6rem 1rem;
+  border-top: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.table tbody tr { transition: background 0.1s; }
+.table tbody tr:hover { background: var(--surface2); }
+
+/* Toggle buttons */
+.toggle {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.tBtn {
+  padding: 0.3rem 0.85rem;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.13s;
+  border-right: 1px solid var(--border);
+}
+
+.tBtn:last-child { border-right: none; }
+.tBtn:hover { background: var(--surface2); color: var(--text2); }
+
+.present {
+  background: var(--success-bg) !important;
+  color: var(--success) !important;
+  border-color: var(--success-bd) !important;
+}
+
+.absent {
+  background: var(--danger-bg) !important;
+  color: var(--danger) !important;
+  border-color: var(--danger-bd) !important;
+}
