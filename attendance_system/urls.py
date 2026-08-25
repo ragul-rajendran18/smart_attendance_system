@@ -43,9 +43,7 @@ urlpatterns = [
     path("login/",                  login),
     path("logout/",                 logout),
     path("me/",                     me),
-    path("token/refresh-token/",          TokenRefreshView.as_view()),
-    
-    path("token/access-token/",refresh_access_token,name="access_token"),
+    path("token/refresh",          TokenRefreshView.as_view()),
     # ── Admin dashboard ──
     path("admin/dashboard/",        admin_dashboard),
 
