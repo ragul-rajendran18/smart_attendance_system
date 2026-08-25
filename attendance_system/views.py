@@ -673,3 +673,27 @@ def download_staff_import_result(request, token):
     response["Content-Disposition"] = 'attachment; filename="staff_import_result.xlsx"'
     return response
 
+
+@api_view(["POST"])
+def refresh_access_token(request):
+    refresh_token = request.data.get("refresh")
+
+    if not refresh_token:
+        return Response(
+            {"message": "Refresh token required"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    try:
+        refresh = RefreshToken(refresh_token)
+
+        return Response({
+            "message": "Access token refreshed successfully",
+            "access": str(refresh.access_token),
+        })
+
+    except TokenError:
+        return Response(
+            {"message": "Invalid or expired refresh token"},
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
