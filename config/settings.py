@@ -28,7 +28,7 @@ SECRET_KEY = 'django-insecure-9zpl3plwnc#inw57v$7dqlo$4t4nywepxvps3h&kfftf4h!-vi
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG=False
-ALLOWED_HOSTS=smart-attendance-system-edf8.onrender.com
+ALLOWED_HOSTS=['smart-attendance-system-edf8.onrender.com']
 
 # Application definition
 
