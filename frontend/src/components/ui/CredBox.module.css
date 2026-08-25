@@ -1,0 +1,70 @@
+.box {
+  background: var(--success-bg);
+  border: 1px solid var(--success-bd);
+  border-radius: var(--radius);
+  padding: 1rem 1.15rem;
+  margin-top: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.msg {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--success);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.45rem 0.75rem;
+  background: #fff;
+  border: 1px solid var(--success-bd);
+  border-radius: var(--radius-sm);
+}
+
+.key {
+  font-size: 0.73rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.val {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.valText {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--text);
+  letter-spacing: 0.5px;
+}
+
+.copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.55rem;
+  background: none;
+  border: 1px solid var(--success-bd);
+  border-radius: 4px;
+  color: var(--success);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.13s;
+}
+
+.copy:hover {
+  background: var(--success-bg);
+}

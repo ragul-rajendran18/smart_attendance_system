@@ -244,7 +244,6 @@ def detect_field(header):
 def similarity(a, b):
     a = compact_text(a)
     b = compact_text(b)
-
     if not a or not b:
         return 0.0
 
@@ -256,19 +255,13 @@ def similarity(a, b):
 
 
 def fuzzy_detect_field(header, threshold=0.82):
-
     detected = detect_field(header)
-
     if detected:
         return detected
-
     best_field = None
     best_score = 0.0
-
     for field, references in FIELD_REFERENCE_NAMES.items():
-
         for reference in references:
-
             score = similarity(
                 header,
                 reference
@@ -277,7 +270,6 @@ def fuzzy_detect_field(header, threshold=0.82):
             if score > best_score:
                 best_score = score
                 best_field = field
-
     if best_score >= threshold:
         return best_field
 

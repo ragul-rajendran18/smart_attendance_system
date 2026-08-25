@@ -1,0 +1,29 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.22rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.71rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+/* Role & semantic variants */
+.primary { background: #EBF1F0; color: #304443; border-color: #CFDFDC; }
+.success { background: var(--success-bg); color: var(--success); border-color: var(--success-bd); }
+.danger  { background: var(--danger-bg);  color: var(--danger);  border-color: var(--danger-bd);  }
+.warning { background: var(--warning-bg); color: var(--warning); border-color: var(--warning-bd); }
+.info    { background: var(--info-bg);    color: var(--info);    border-color: var(--info-bd);    }
+.neutral { background: var(--surface2);   color: var(--text2);   border-color: var(--border);     }
+
+/* Dot indicator */
+.dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}

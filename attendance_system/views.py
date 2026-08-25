@@ -1,210 +1,530 @@
+from datetime import time
+import uuid
+
+from django.utils import timezone
 from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import make_password
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from .permissions import IsAdminRole
-from rest_framework.response import Response
-from rest_framework import status
-from .models import User, Student, Staff, Subject, AttendanceSession, Attendance, Batch
-from rest_framework_simplejwt.tokens import RefreshToken
-from django.utils import timezone
-from datetime import time
-from .models import User, Student, Staff
-from .serializer import (
-    StudentSerializer,
-    StaffSerializer,
-    LoginSerializer,
-    TimeTableSerializer,
-    BatchSerializer
-)
-from .utils import generate_username, generate_password
-from datetime import datetime
-from .models import TimeTable
-
-import uuid
 from django.core.cache import cache
-
 from django.http import HttpResponse
 
-from rest_framework.decorators import (
-    api_view,
-    permission_classes,
-    parser_classes,
-)
-from rest_framework.parsers import (
-    MultiPartParser,
-    FormParser,
-)
+from rest_framework.decorators import api_view, permission_classes, parser_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
 
+from .models import User, Student, Staff, Subject, AttendanceSession, Attendance, Batch
 from .permissions import IsAdminRole
-
-from .services.student_import_service import (
-    import_students_from_file,
-    generate_credentials_excel,
-)
-from .permissions import IsAdminRole
-
-from .services.staff_import_service import (
-    import_staff_from_file,
-)
-
-from .services.staff_result_service import (
-    generate_staff_import_result_excel,
-)
-import json
-import zipfile
-from io import BytesIO
+from .serializer import LoginSerializer, StudentSerializer, StaffSerializer, BatchSerializer
+from .utils import generate_username, generate_password
+from .services.student_import_service import import_students_from_file, generate_credentials_excel
+from .services.staff_import_service import import_staff_from_file
+from .services.staff_result_service import generate_staff_import_result_excel
 
 
+# Period Schedule
 PERIOD_SCHEDULE = (
-    (1, time(9, 0), time(9, 50)),
-    (2, time(9, 50), time(10, 40)),
-    (3, time(10, 55), time(11, 45)),
-    (4, time(11, 45), time(12, 35)),
-    (5, time(13, 20), time(14, 10)),
-    (6, time(14, 10), time(15, 0)),
-    (7, time(15, 10), time(15, 55)),
-    (8, time(15, 55), time(16, 40)),
+    (1, time(9, 0), time(9, 50)), (2, time(9, 50), time(10, 40)),
+    (3, time(10, 55), time(11, 45)), (4, time(11, 45), time(12, 35)),
+    (5, time(13, 20), time(14, 10)), (6, time(14, 10), time(15, 0)),
+    (7, time(15, 10), time(15, 55)), (8, time(15, 55), time(16, 40)),
 )
 
 
 def get_active_period(current_time=None):
     current_time = current_time or timezone.localtime().time()
-    for period, start, end in PERIOD_SCHEDULE:
-        if start <= current_time < end:
-            return period, start, end
-    return None
+    return next((item for item in PERIOD_SCHEDULE if item[1] <= current_time < item[2]), None)
 
 
-# ============================
-# Create Student
-# ============================
+def _staff_required(request):
+    return request.user.role == "STAFF"
+
+
+# ════════════════════════════════════════════════════════════════
+# Auth
+# ════════════════════════════════════════════════════════════════
+
+@api_view(["POST"])
+def login(request):
+    serializer = LoginSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    user = authenticate(
+        username=serializer.validated_data["username"],
+        password=serializer.validated_data["password"],
+    )
+    if user is None:
+        return Response({"message": "Invalid Username or Password"}, status=status.HTTP_401_UNAUTHORIZED)
+    refresh = RefreshToken.for_user(user)
+    return Response({
+        "message": "Login Successful",
+        "role": user.role,
+        "access": str(refresh.access_token),
+        "refresh": str(refresh),
+    })
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def me(request):
+    """Return current user info — used for session rehydration on page refresh."""
+    user = request.user
+    data = {
+        "id": user.id,
+        "username": user.username,
+        "role": user.role,
+    }
+    if user.role == "STUDENT":
+        try:
+            s = user.student
+            data.update({
+                "name": s.student_name,
+                "register_no": s.register_no,
+                "class_name": s.class_name,
+            })
+        except Exception:
+            pass
+    elif user.role == "STAFF":
+        try:
+            st = user.staff
+            data.update({
+                "name": st.staff_name,
+                "staff_id": st.staff_id,
+            })
+        except Exception:
+            pass
+    elif user.role == "ADMIN":
+        data["name"] = user.get_full_name() or user.username
+    return Response({"success": True, "data": data})
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def logout(request):
+    """Blacklist the refresh token so it cannot be reused after logout."""
+    refresh_token = request.data.get("refresh")
+    if not refresh_token:
+        return Response({"message": "Refresh token required"}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        token = RefreshToken(refresh_token)
+        token.blacklist()
+    except TokenError:
+        pass  # already expired or invalid — still return success
+    return Response({"message": "Logged out successfully"})
+
+
+@api_view(["GET"])
+@permission_classes([IsAdminRole])
+def admin_dashboard(request):
+    """Summary stats for the admin landing dashboard."""
+    today = timezone.localdate()
+    return Response({
+        "success": True,
+        "data": {
+            "total_students": Student.objects.count(),
+            "total_staff": Staff.objects.count(),
+            "total_subjects": Subject.objects.count(),
+            "total_batches": Batch.objects.filter(is_active=True).count(),
+            "todays_sessions": AttendanceSession.objects.filter(date=today).count(),
+            "todays_completed": AttendanceSession.objects.filter(
+                date=today, status="COMPLETED"
+            ).count(),
+        },
+    })
+
+
+# ════════════════════════════════════════════════════════════════
+# Student Management
+# ════════════════════════════════════════════════════════════════
 
 @api_view(["POST"])
 @permission_classes([IsAdminRole])
 def create_student(request):
-
     serializer = StudentSerializer(data=request.data)
-
     if serializer.is_valid():
-
         username = generate_username("STU")
         password = generate_password()
-
-        user = User.objects.create(
-            username=username,
-            password=make_password(password),
-            role="STUDENT"
-        )
-
-        Student.objects.create(
-            user=user,
-            student_name=serializer.validated_data["student_name"],
-            register_no=serializer.validated_data["register_no"],
-            class_name=serializer.validated_data["class_name"],
-            batch=serializer.validated_data["batch"],
-        )
-
-        return Response({
-            "message": "Student Created Successfully",
-            "username": username,
-            "password": password
-        }, status=status.HTTP_201_CREATED)
-
+        user = User.objects.create(username=username, password=make_password(password), role="STUDENT")
+        Student.objects.create(user=user, **serializer.validated_data)
+        return Response({"message": "Student Created Successfully", "username": username, "password": password}, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# ============================
-# Create Staff
-# ============================
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def student_profile(request):
+    try:
+        student = Student.objects.get(user=request.user)
+    except Student.DoesNotExist:
+        return Response({"message": "Student Profile Not Found"}, status=status.HTTP_404_NOT_FOUND)
+    return Response({"student_name": student.student_name, "register_no": student.register_no, "class_name": student.class_name, "username": request.user.username, "role": request.user.role})
 
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def student_attendance(request):
+    if request.user.role != "STUDENT":
+        return Response({"message": "Permission Denied"}, status=status.HTTP_403_FORBIDDEN)
+    try:
+        student = Student.objects.get(user=request.user)
+    except Student.DoesNotExist:
+        return Response({"message": "Student Not Found"}, status=status.HTTP_404_NOT_FOUND)
+    records = Attendance.objects.filter(student=student).select_related("session__subject")
+    present = records.filter(status="Present").count()
+    absent = records.filter(status="Absent").count()
+    return Response({"student_name": student.student_name, "register_no": student.register_no, "total_classes": records.count(), "present": present, "absent": absent, "attendance_percentage": round((present / (present + absent)) * 100, 2) if present + absent else 0, "attendance": [{"period": record.session.period, "subject": record.session.subject.subject_name, "status": record.status} for record in records]})
+
+
+@api_view(["GET"])
+@permission_classes([IsAdminRole])
+def student_list(request):
+    class_name = request.query_params.get("class_name")
+    batch_id = request.query_params.get("batch")
+    if not class_name or not batch_id:
+        return Response({"message": "class_name and batch are required"}, status=status.HTTP_400_BAD_REQUEST)
+    students = Student.objects.filter(class_name=class_name, batch_id=batch_id).select_related("batch").order_by("student_name")
+    return Response({"message": "Student list retrieved successfully", "class_name": class_name, "batch_id": batch_id, "total_students": students.count(), "students": [{"id": s.id, "student_name": s.student_name, "register_no": s.register_no, "class_name": s.class_name, "batch_id": s.batch_id, "batch": str(s.batch) if s.batch else None} for s in students]})
+
+
+@api_view(["PUT"])
+@permission_classes([IsAdminRole])
+def update_student(request):
+    student_id = request.data.get("id")
+    if not student_id:
+        return Response({"message": "Student id is required"}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        student = Student.objects.get(id=student_id)
+    except Student.DoesNotExist:
+        return Response({"message": "Student not found"}, status=status.HTTP_404_NOT_FOUND)
+    serializer = StudentSerializer(student, data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    student = serializer.save()
+    return Response({"message": "Student updated successfully", "student": {"id": student.id, "student_name": student.student_name, "register_no": student.register_no, "class_name": student.class_name, "batch_id": student.batch_id, "batch": str(student.batch) if student.batch else None}})
+
+
+@api_view(["DELETE"])
+@permission_classes([IsAdminRole])
+def delete_student(request):
+    student_id = request.data.get("id") or request.query_params.get("id")
+    if not student_id:
+        return Response({"message": "Student id is required"}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        student = Student.objects.select_related("user").get(id=student_id)
+    except Student.DoesNotExist:
+        return Response({"message": "Student not found"}, status=status.HTTP_404_NOT_FOUND)
+    student.user.delete()
+    return Response({"message": "Student deleted successfully"})
+
+
+@api_view(["POST"])
+@permission_classes([IsAdminRole])
+@parser_classes([MultiPartParser, FormParser])
+def bulk_upload_students(request):
+    uploaded_file = request.FILES.get("file")
+    if not uploaded_file:
+        return Response({"message": "File is required.", "field": "file"}, status=status.HTTP_400_BAD_REQUEST)
+    if not uploaded_file.name.lower().endswith((".xlsx", ".csv", ".pdf")):
+        return Response({"message": "Unsupported file format. Supported formats: XLSX, CSV, PDF."}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        result = import_students_from_file(uploaded_file, admin_user=request.user)
+    except ValueError as exc:
+        return Response({"message": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as exc:
+        return Response({"message": "Student import failed.", "error": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    created = result.get("created_students", [])
+    ignored = result.get("ignored_students", [])
+    failed = result.get("failed_students", [])
+    token = uuid.uuid4().hex
+    cache.set(f"student_import:{token}", {"created_students": created, "ignored_students": ignored, "failed_students": failed}, timeout=3600)
+    return Response({"message": "Student import completed", "source_file": uploaded_file.name, "created_count": len(created), "ignored_count": len(ignored), "failed_count": len(failed), "created_students": created, "ignored_students": ignored, "failed_students": failed, "download_token": token, "download_url": f"/api/students/bulk-upload/download/{token}/"})
+
+
+@api_view(["GET"])
+@permission_classes([IsAdminRole])
+def download_student_import_result(request, token):
+    result = cache.get(f"student_import:{token}")
+    if not result:
+        return Response({"message": "Import result not found or download link has expired."}, status=status.HTTP_404_NOT_FOUND)
+    try:
+        excel_file = generate_credentials_excel(created_students=result.get("created_students", []), ignored_students=result.get("ignored_students", []), failed_students=result.get("failed_students", []))
+    except Exception as exc:
+        return Response({"message": "Failed to generate result Excel.", "error": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    response = HttpResponse(excel_file.getvalue(), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    response["Content-Disposition"] = 'attachment; filename="student_import_result.xlsx"'
+    return response
+
+
+# ════════════════════════════════════════════════════════════════
+# Staff Management
+# ════════════════════════════════════════════════════════════════
 
 @api_view(["POST"])
 @permission_classes([IsAdminRole])
 def create_staff(request):
-
     serializer = StaffSerializer(data=request.data)
-
     if serializer.is_valid():
-
         username = generate_username("STF")
         password = generate_password()
-
         user = User.objects.create(
             username=username,
             password=make_password(password),
-            role="STAFF"
+            role="STAFF",
         )
-
         Staff.objects.create(
             user=user,
             staff_name=serializer.validated_data["staff_name"],
-            staff_id=serializer.validated_data["staff_id"]
+            staff_id=serializer.validated_data["staff_id"],
         )
-
         return Response({
             "message": "Staff Created Successfully",
             "username": username,
-            "password": password
+            "password": password,
         }, status=status.HTTP_201_CREATED)
-
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(["POST"])
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def staff_profile(request):
+    if not _staff_required(request):
+        return Response({"message": "Permission Denied"}, status=status.HTTP_403_FORBIDDEN)
+    try:
+        staff = Staff.objects.get(user=request.user)
+    except Staff.DoesNotExist:
+        return Response({"message": "Staff Profile Not Found"}, status=status.HTTP_404_NOT_FOUND)
+    return Response({"staff_name": staff.staff_name, "staff_id": staff.staff_id, "username": request.user.username, "role": request.user.role})
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def staff_dashboard(request):
+    if not _staff_required(request):
+        return Response({"message": "Permission Denied"}, status=status.HTTP_403_FORBIDDEN)
+    staff = Staff.objects.get(user=request.user)
+    active_period = get_active_period()
+    sessions = AttendanceSession.objects.filter(staff=staff).select_related("subject").order_by("-date", "-period", "-id")[:20]
+    session_data = [
+        {
+            "id": session.id,
+            "date": session.date.isoformat(),
+            "period": session.period,
+            "class_name": session.class_name,
+            "subject": session.subject.subject_name,
+            "status": session.status,
+        }
+        for session in sessions
+    ]
+    response_data = {"sessions": session_data}
+    if active_period is None:
+        response_data["message"] = "No Active Session"
+        return Response(response_data)
+    period, start, end = active_period
+    response_data.update({
+        "status": "LIVE",
+        "period": period,
+        "start_time": start.strftime("%H:%M"),
+        "end_time": end.strftime("%H:%M"),
+    })
+    return Response(response_data)
+
+
+@api_view(["GET"])
 @permission_classes([IsAdminRole])
-def create_subject(request):
+def staff_list(request):
+    staff_members = Staff.objects.select_related("user").all()
+    return Response({"staff": [
+        {
+            "id": staff.id,
+            "staff_name": staff.staff_name,
+            "staff_id": staff.staff_id,
+            "username": staff.user.username,
+        }
+        for staff in staff_members
+    ]})
+
+
+@api_view(["PUT"])
+@permission_classes([IsAdminRole])
+def update_staff(request):
+    staff_id = request.data.get("id")
+    if not staff_id:
+        return Response({"message": "Staff id is required"}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        staff = Staff.objects.select_related("user").get(id=staff_id)
+    except Staff.DoesNotExist:
+        return Response({"message": "Staff not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+    staff_name = request.data.get("staff_name")
+    staff_code = request.data.get("staff_id")
+    password = request.data.get("password")
+    
+    if staff_name:
+        staff.staff_name = staff_name
+    if staff_code:
+        if Staff.objects.filter(staff_id=staff_code).exclude(id=staff_id).exists():
+            return Response({"message": "Staff ID already exists"}, status=status.HTTP_400_BAD_REQUEST)
+        staff.staff_id = staff_code
+    if password:
+        staff.user.password = make_password(password)
+        staff.user.save()
+    
+    staff.save()
+    return Response({
+        "message": "Staff updated successfully",
+        "staff": {
+            "id": staff.id,
+            "staff_name": staff.staff_name,
+            "staff_id": staff.staff_id,
+            "username": staff.user.username,
+        }
+    })
+
+
+@api_view(["DELETE"])
+@permission_classes([IsAdminRole])
+def delete_staff(request):
+    staff_id = request.data.get("id") or request.query_params.get("id")
+    if not staff_id:
+        return Response({"message": "Staff id is required"}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        staff = Staff.objects.select_related("user").get(id=staff_id)
+    except Staff.DoesNotExist:
+        return Response({"message": "Staff not found"}, status=status.HTTP_404_NOT_FOUND)
+    staff.user.delete()
+    return Response({"message": "Staff deleted successfully"})
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def session_list(request):
+    if not _staff_required(request):
+        return Response({"message": "Permission Denied"}, status=status.HTTP_403_FORBIDDEN)
+    sessions = AttendanceSession.objects.filter(staff__user=request.user).select_related("subject").prefetch_related("attendance_set").order_by("-date", "-period", "-id")
+    return Response({"sessions": [{
+        "id": session.id, "period": session.period, "class_name": session.class_name,
+        "subject": session.subject.subject_name, "date": session.date.isoformat(),
+        "status": session.status,
+        "present_count": sum(record.status == "Present" for record in session.attendance_set.all()),
+        "absent_count": sum(record.status == "Absent" for record in session.attendance_set.all()),
+    } for session in sessions]})
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def session_attendance(request):
+    if not _staff_required(request):
+        return Response({"message": "Permission Denied"}, status=status.HTTP_403_FORBIDDEN)
+    session_id = request.query_params.get("session_id")
+    if not session_id:
+        return Response({"message": "session_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        session = AttendanceSession.objects.select_related("subject").get(id=session_id, staff__user=request.user)
+    except (AttendanceSession.DoesNotExist, ValueError):
+        return Response({"message": "Session not found"}, status=status.HTTP_404_NOT_FOUND)
+    records = Attendance.objects.filter(session=session).select_related("student").order_by("student__register_no")
+    return Response({"session": {"id": session.id, "period": session.period, "class_name": session.class_name, "subject": session.subject.subject_name, "date": session.date.isoformat()}, "students": [
+        {"id": record.student_id, "student_name": record.student.student_name, "register_no": record.student.register_no, "status": record.status}
+        for record in records
+    ]})
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def subject_list(request):
+    class_name = request.query_params.get("class_name", "").strip()
+    qs = Subject.objects.all().order_by("class_name", "subject_name")
+    if class_name:
+        qs = qs.filter(class_name=class_name)
+    return Response({
+        "subjects": [
+            {
+                "id": subject.id,
+                "subject_code": subject.subject_code,
+                "subject_name": subject.subject_name,
+                "class_name": subject.class_name,
+            }
+            for subject in qs
+        ]
+    })
+
+
+@api_view(["PUT"])
+@permission_classes([IsAdminRole])
+def update_subject(request):
+    subject_id = request.data.get("id")
+    if not subject_id:
+        return Response({"message": "Subject id is required"}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        subject = Subject.objects.get(id=subject_id)
+    except Subject.DoesNotExist:
+        return Response({"message": "Subject not found"}, status=status.HTTP_404_NOT_FOUND)
 
     subject_code = request.data.get("subject_code")
     subject_name = request.data.get("subject_name")
     class_name = request.data.get("class_name")
 
-    if not subject_code:
-        return Response(
-            {"message": "Subject code is required"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+    if subject_code:
+        if Subject.objects.filter(subject_code=subject_code).exclude(id=subject_id).exists():
+            return Response({"message": "Subject code already exists"}, status=status.HTTP_400_BAD_REQUEST)
+        subject.subject_code = subject_code
+    if subject_name:
+        subject.subject_name = subject_name
+    if class_name:
+        subject.class_name = class_name
 
-    if not subject_name:
-        return Response(
-            {"message": "Subject name is required"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    if not class_name:
-        return Response(
-            {"message": "Class name is required"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    if Subject.objects.filter(
-        subject_code=subject_code
-    ).exists():
-
-        return Response(
-            {"message": "Subject code already exists"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    subject = Subject.objects.create(
-        subject_code=subject_code,
-        subject_name=subject_name,
-        class_name=class_name
-    )
-
+    subject.save()
     return Response({
-
-        "message": "Subject Created Successfully",
-
+        "message": "Subject updated successfully",
         "subject": {
             "id": subject.id,
             "subject_code": subject.subject_code,
             "subject_name": subject.subject_name,
-            "class_name": subject.class_name
-        }
+            "class_name": subject.class_name,
+        },
+    })
 
+
+@api_view(["DELETE"])
+@permission_classes([IsAdminRole])
+def delete_subject(request):
+    subject_id = request.data.get("id") or request.query_params.get("id")
+    if not subject_id:
+        return Response({"message": "Subject id is required"}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        subject = Subject.objects.get(id=subject_id)
+    except Subject.DoesNotExist:
+        return Response({"message": "Subject not found"}, status=status.HTTP_404_NOT_FOUND)
+    subject.delete()
+    return Response({"message": "Subject deleted successfully"})
+
+
+@api_view(["POST"])
+@permission_classes([IsAdminRole])
+def create_subject(request):
+    subject_code = request.data.get("subject_code")
+    subject_name = request.data.get("subject_name")
+    class_name = request.data.get("class_name")
+    if not subject_code or not subject_name or not class_name:
+        field = "Subject code" if not subject_code else "Subject name" if not subject_name else "Class name"
+        return Response({"message": f"{field} is required"}, status=status.HTTP_400_BAD_REQUEST)
+    if Subject.objects.filter(subject_code=subject_code).exists():
+        return Response({"message": "Subject code already exists"}, status=status.HTTP_400_BAD_REQUEST)
+    subject = Subject.objects.create(
+        subject_code=subject_code,
+        subject_name=subject_name,
+        class_name=class_name,
+    )
+    return Response({
+        "message": "Subject Created Successfully",
+        "subject": {
+            "id": subject.id,
+            "subject_code": subject.subject_code,
+            "subject_name": subject.subject_name,
+            "class_name": subject.class_name,
+        },
     }, status=status.HTTP_201_CREATED)
 
 
@@ -212,902 +532,144 @@ def create_subject(request):
 @permission_classes([IsAdminRole])
 def create_batch(request):
     serializer = BatchSerializer(data=request.data)
-
     if serializer.is_valid():
         batch = serializer.save()
         return Response({
             "message": "Batch Created Successfully",
-            "batch": {
-                "id": batch.id,
-                "name": batch.name,
-                "is_active": batch.is_active,
-            },
+            "batch": {"id": batch.id, "name": batch.name, "is_active": batch.is_active},
         }, status=status.HTTP_201_CREATED)
-
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(["GET"])
 @permission_classes([IsAdminRole])
 def list_batches(request):
-    batches = Batch.objects.filter(is_active=True).order_by("name")
     return Response([
         {"id": batch.id, "name": batch.name}
-        for batch in batches
+        for batch in Batch.objects.filter(is_active=True).order_by("name")
     ])
 
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def staff_classes(request):
-    if request.user.role != "STAFF":
+    if not _staff_required(request):
         return Response({"message": "Permission Denied"}, status=status.HTTP_403_FORBIDDEN)
-
-    classes = Subject.objects.values_list("class_name", flat=True).distinct().order_by("class_name")
-    return Response({"classes": list(classes)})
+    return Response({"classes": list(Subject.objects.values_list("class_name", flat=True).distinct().order_by("class_name"))})
 
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def class_subjects(request):
-    if request.user.role != "STAFF":
+    if not _staff_required(request):
         return Response({"message": "Permission Denied"}, status=status.HTTP_403_FORBIDDEN)
-
     class_name = request.query_params.get("class_name", "").strip()
     if not class_name:
         return Response({"message": "class_name is required"}, status=status.HTTP_400_BAD_REQUEST)
+    return Response({"class_name": class_name, "subjects": [
+        {"id": subject.id, "subject_code": subject.subject_code, "subject_name": subject.subject_name}
+        for subject in Subject.objects.filter(class_name=class_name).order_by("subject_name")
+    ]})
 
-    subjects = Subject.objects.filter(class_name=class_name).order_by("subject_name")
-    return Response({
-        "class_name": class_name,
-        "subjects": [
-            {
-                "id": subject.id,
-                "subject_code": subject.subject_code,
-                "subject_name": subject.subject_name,
-            }
-            for subject in subjects
-        ],
-    })
-
-# ============================
-# Login
-# ============================
-
-@api_view(["POST"])
-def login(request):
-
-    serializer = LoginSerializer(data=request.data)
-
-    if serializer.is_valid():
-
-        username = serializer.validated_data["username"]
-        password = serializer.validated_data["password"]
-
-        user = authenticate(username=username, password=password)
-
-        if user is None:
-            return Response(
-                {
-                    "message": "Invalid Username or Password"
-                },
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-
-        refresh = RefreshToken.for_user(user)
-
-        return Response({
-
-            "message": "Login Successful",
-
-            "role": user.role,
-
-            "access": str(refresh.access_token),
-
-            "refresh": str(refresh)
-
-        })
-
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-# ============================
-# Student Profile
-# ============================
-
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-def student_profile(request):
-
-    try:
-
-        student = Student.objects.get(user=request.user)
-
-        return Response({
-
-            "student_name": student.student_name,
-
-            "register_no": student.register_no,
-
-            "class_name": student.class_name,
-
-            "username": request.user.username,
-
-            "role": request.user.role
-
-        })
-
-    except Student.DoesNotExist:
-
-        return Response(
-            {
-                "message": "Student Profile Not Found"
-            },
-            status=status.HTTP_404_NOT_FOUND
-        )
-
-
-# ============================
-# Staff Profile
-# ============================
-
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-def staff_profile(request):
-
-    try:
-
-        staff = Staff.objects.get(user=request.user)
-
-        return Response({
-
-            "staff_name": staff.staff_name,
-
-            "staff_id": staff.staff_id,
-
-            "username": request.user.username,
-
-            "role": request.user.role
-
-        })
-
-    except Staff.DoesNotExist:
-
-        return Response(
-            {
-                "message": "Staff Profile Not Found"
-            },
-            status=status.HTTP_404_NOT_FOUND
-        )
-
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-def staff_dashboard(request):
-
-    if request.user.role != "STAFF":
-        return Response(
-            {"message": "Permission Denied"},
-            status=status.HTTP_403_FORBIDDEN
-        )
-
-    current_time = datetime.now().time()
-    print(current_time)
-
-    if time(10, 0) <= current_time <= time(10, 50):
-        period = 1
-        start = "10:00"
-        end = "10:50"
-
-    elif time(11, 0) <= current_time <= time(11, 50):
-        period = 2
-        start = "11:00"
-        end = "11:50"
-
-    elif time(12, 0) <= current_time <= time(12, 50):
-        period = 3
-        start = "12:00"
-        end = "12:50"
-
-    elif time(13, 30) <= current_time <= time(14, 20):
-        period = 4
-        start = "13:30"
-        end = "14:20"
-
-    elif time(14, 20) <= current_time <= time(15, 10):
-        period = 5
-        start = "14:20"
-        end = "15:10"
-
-    else:
-     active_period = get_active_period()
-    if active_period is None:
-        return Response({
-             "message": "No Active Session"
-        })
-
-    period, start, end = active_period
-
-    return Response({
-        "status": "LIVE",
-        "period": period,
-        "start_time": start.strftime("%H:%M"),
-        "end_time": end.strftime("%H:%M"),
-    })
-
-from .models import Subject
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def start_session(request):
-
-    if request.user.role != "STAFF":
-        return Response(
-            {"message": "Permission Denied"},
-            status=status.HTTP_403_FORBIDDEN
-        )
-
-    staff = Staff.objects.get(user=request.user)
-
-    class_name = request.data.get("class_name")
-    subject_id = request.data.get("subject_id")
-
-    if not class_name or not subject_id:
-        return Response(
-            {"message": "class_name and subject_id are required"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
+    if not _staff_required(request):
+        return Response({"message": "Permission Denied"}, status=status.HTTP_403_FORBIDDEN)
     try:
-        subject = Subject.objects.get(id=subject_id)
-    except Subject.DoesNotExist:
-        return Response(
-            {"message": "Subject Not Found"},
-            status=status.HTTP_404_NOT_FOUND
-        )
-
+        staff = Staff.objects.get(user=request.user)
+        subject = Subject.objects.get(id=request.data.get("subject_id"))
+    except (Staff.DoesNotExist, Subject.DoesNotExist, ValueError):
+        return Response({"message": "Subject Not Found"}, status=status.HTTP_404_NOT_FOUND)
+    class_name = request.data.get("class_name")
+    if not class_name or not request.data.get("subject_id"):
+        return Response({"message": "class_name and subject_id are required"}, status=status.HTTP_400_BAD_REQUEST)
     if subject.class_name != class_name:
-        return Response(
-            {"message": "Subject does not belong to the selected class"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    current_day = timezone.localtime().strftime("%A")
+        return Response({"message": "Subject does not belong to the selected class"}, status=status.HTTP_400_BAD_REQUEST)
     active_period = get_active_period()
     if active_period is None:
-        return Response(
-            {"message": "No Active Session"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    period, start, end = active_period
-
-    existing_session = AttendanceSession.objects.filter(
-        staff=staff,
-        date=timezone.localdate(),
-        period=period
-    ).select_related("subject").first()
-
-    if existing_session and (
-        existing_session.class_name != class_name
-        or existing_session.subject_id != subject.id
-    ):
-        return Response(
-            {"message": "Another session is already started for this period."},
-            status=status.HTTP_409_CONFLICT
-        )
-
-    if existing_session:
-        session = existing_session
-        message = "Existing session loaded."
-    else:
-        session = AttendanceSession.objects.create(
-            staff=staff,
-            class_name=class_name,
-            subject=subject,
-            date=timezone.localdate(),
-            period=period,
-            status="ACTIVE"
-        )
-        message = "Session Started Successfully"
-
+        return Response({"message": "No Active Session"}, status=status.HTTP_400_BAD_REQUEST)
+    period, _, _ = active_period
+    session = AttendanceSession.objects.filter(staff=staff, date=timezone.localdate(), period=period).select_related("subject").first()
+    if session and (session.class_name != class_name or session.subject_id != subject.id):
+        return Response({"message": "Another session is already started for this period."}, status=status.HTTP_409_CONFLICT)
+    message = "Existing session loaded." if session else "Session Started Successfully"
+    if not session:
+        session = AttendanceSession.objects.create(staff=staff, class_name=class_name, subject=subject, date=timezone.localdate(), period=period, status="ACTIVE")
     students = Student.objects.filter(class_name=session.class_name).order_by("student_name")
+    return Response({"message": message, "session_id": session.id, "period": session.period, "class_name": session.class_name, "subject": session.subject.subject_name, "students": [{"id": s.id, "student_name": s.student_name, "register_no": s.register_no} for s in students]})
 
-    data = []
-
-    for student in students:
-        data.append({
-            "id": student.id,
-            "student_name": student.student_name,
-            "register_no": student.register_no
-        })
-
-    return Response({
-
-        "message": message,
-
-        "session_id": session.id,
-
-        "period": session.period,
-
-        "class_name": session.class_name,
-
-        "subject": session.subject.subject_name,
-
-        "students": data
-
-    })
-
-from .models import Attendance
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def save_attendance(request):
-
-    if request.user.role != "STAFF":
-        return Response(
-            {"message":"Permission Denied"},
-            status=403
-        )
-
+    if not _staff_required(request):
+        return Response({"message": "Permission Denied"}, status=status.HTTP_403_FORBIDDEN)
     session_id = request.data.get("session_id")
-
     attendance = request.data.get("attendance")
-
     if not session_id or not attendance:
-
-        return Response(
-            {"message":"Invalid Data"},
-            status=400
-        )
-
+        return Response({"message": "Invalid Data"}, status=status.HTTP_400_BAD_REQUEST)
     try:
         session = AttendanceSession.objects.get(id=session_id, staff__user=request.user)
-    except AttendanceSession.DoesNotExist:
-        return Response({"message": "Attendance session not found"}, status=404)
-
+    except (AttendanceSession.DoesNotExist, ValueError):
+        return Response({"message": "Attendance session not found"}, status=status.HTTP_404_NOT_FOUND)
     for record in attendance:
-
-        student = Student.objects.get(id=record["student_id"])
-
-        Attendance.objects.update_or_create(
-            session=session,
-            student=student,
-            defaults={"status": record["status"]}
-        )
-
+        Attendance.objects.update_or_create(session=session, student_id=record["student_id"], defaults={"status": record["status"]})
     session.status = "COMPLETED"
     session.save(update_fields=["status"])
-
-    return Response({
-
-        "message":"Attendance Saved Successfully"
-
-    })
-
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from .models import Student, Attendance
-
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-def student_attendance(request):
-
-    if request.user.role != "STUDENT":
-        return Response({
-            "message": "Permission Denied"
-        }, status=403)
-
-    try:
-        student = Student.objects.get(user=request.user)
-    except Student.DoesNotExist:
-        return Response({
-            "message": "Student Not Found"
-        }, status=404)
-
-    attendance_records = Attendance.objects.filter(student=student)
-
-    total_classes = attendance_records.count()
-    present = attendance_records.filter(status="Present").count()
-    absent = attendance_records.filter(status="Absent").count()
-
-    percentage = 0
-
-    if total_classes > 0:
-        percentage = round((present / total_classes) * 100, 2)
-
-    attendance_data = []
-
-    for record in attendance_records:
-
-        attendance_data.append({
-
-            # "date": record.session.created_at.date(),
-
-            "period": record.session.period,
-
-            "subject": record.session.subject.subject_name,
-
-            "status": record.status
-
-        })
-
-    return Response({
-
-        "student_name": student.student_name,
-
-        "register_no": student.register_no,
-
-        "total_classes": total_classes,
-
-        "present": present,
-
-        "absent": absent,
-
-        "attendance_percentage": percentage,
-
-        "attendance": attendance_data
-
-    })
-
-@api_view(["POST"])
-@permission_classes([IsAdminRole])
-@parser_classes([MultiPartParser, FormParser])
-def bulk_upload_students(request):
-
-    # ========================================================
-    # 1. GET FILE
-    # ========================================================
-
-    uploaded_file = request.FILES.get("file")
-
-    if not uploaded_file:
-        return Response(
-            {
-                "message": "File is required.",
-                "field": "file",
-            },
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    # ========================================================
-    # 2. VALIDATE FILE
-    # ========================================================
-
-    filename = uploaded_file.name.lower()
-
-    allowed_extensions = (
-        ".xlsx",
-        ".csv",
-        ".pdf",
-    )
-
-    if not filename.endswith(allowed_extensions):
-        return Response(
-            {
-                "message": (
-                    "Unsupported file format. "
-                    "Supported formats: XLSX, CSV, PDF."
-                ),
-                "filename": uploaded_file.name,
-            },
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    # ========================================================
-    # 3. IMPORT STUDENTS
-    # ========================================================
-
-    try:
-
-        result = import_students_from_file(
-            uploaded_file,
-            admin_user=request.user,
-        )
-
-    except ValueError as exc:
-
-        return Response(
-            {
-                "message": str(exc),
-            },
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    except Exception as exc:
-
-        return Response(
-            {
-                "message": "Student import failed.",
-                "error": str(exc),
-            },
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
-
-    # ========================================================
-    # 4. GET RESULT
-    # ========================================================
-
-    created_students = result.get(
-        "created_students",
-        []
-    )
-
-    ignored_students = result.get(
-        "ignored_students",
-        []
-    )
-
-    failed_students = result.get(
-        "failed_students",
-        []
-    )
-
-    # ========================================================
-    # 5. CREATE DOWNLOAD TOKEN
-    # ========================================================
-
-    download_token = uuid.uuid4().hex
-
-    # Store only temporarily.
-    #
-    # 1 hour = 3600 seconds
-    #
-    cache.set(
-        f"student_import:{download_token}",
-        {
-            "created_students": created_students,
-            "ignored_students": ignored_students,
-            "failed_students": failed_students,
-        },
-        timeout=3600,
-    )
-
-    # ========================================================
-    # 6. RETURN JSON
-    # ========================================================
-
-    return Response(
-        {
-            "message": "Student import completed",
-
-            "source_file": uploaded_file.name,
-
-            "created_count": len(
-                created_students
-            ),
-
-            "ignored_count": len(
-                ignored_students
-            ),
-
-            "failed_count": len(
-                failed_students
-            ),
-
-            "created_students": created_students,
-
-            "ignored_students": ignored_students,
-
-            "failed_students": failed_students,
-
-            "download": {
-                "available": True,
-                "token": download_token,
-                "expires_in": 3600,
-                "endpoint": (
-                    f"/api/students/"
-                    f"bulk-upload/download/"
-                    f"{download_token}/"
-                ),
-            },
-        },
-        status=status.HTTP_200_OK,
-    )
-
-@api_view(["GET"])
-@permission_classes([IsAdminRole])
-def download_student_import_result(request, token):
-
-    # ========================================================
-    # 1. GET STORED IMPORT RESULT
-    # ========================================================
-
-    cache_key = f"student_import:{token}"
-
-    import_result = cache.get(cache_key)
-
-    if not import_result:
-
-        return Response(
-            {
-                "message": (
-                    "Import result not found or "
-                    "download link has expired."
-                ),
-            },
-            status=status.HTTP_404_NOT_FOUND,
-        )
-
-    # ========================================================
-    # 2. GET DATA
-    # ========================================================
-
-    created_students = import_result.get(
-        "created_students",
-        []
-    )
-
-    ignored_students = import_result.get(
-        "ignored_students",
-        []
-    )
-
-    failed_students = import_result.get(
-        "failed_students",
-        []
-    )
-
-    # ========================================================
-    # 3. GENERATE EXCEL
-    # ========================================================
-
-    try:
-
-        excel_file = generate_credentials_excel(
-            created_students=created_students,
-            ignored_students=ignored_students,
-            failed_students=failed_students,
-        )
-
-    except Exception as exc:
-
-        return Response(
-            {
-                "message": "Failed to generate result Excel.",
-                "error": str(exc),
-            },
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
-
-    # ========================================================
-    # 4. RETURN EXCEL
-    # ========================================================
-
-    response = HttpResponse(
-        excel_file.getvalue(),
-        content_type=(
-            "application/vnd.openxmlformats-officedocument."
-            "spreadsheetml.sheet"
-        ),
-    )
-
-    response["Content-Disposition"] = (
-        'attachment; filename="student_import_result.xlsx"'
-    )
-
-    return response
-from django.core.cache import cache
-from django.http import HttpResponse
-
-from rest_framework.decorators import (
-    api_view,
-    permission_classes,
-    parser_classes,
-)
-from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework.response import Response
-from rest_framework import status
-
-
+    return Response({"message": "Attendance Saved Successfully"})
 
 
 @api_view(["POST"])
 @permission_classes([IsAdminRole])
 @parser_classes([MultiPartParser, FormParser])
 def bulk_upload_staff(request):
-
-    uploaded_file = request.FILES.get(
-        "file"
-    )
-
+    uploaded_file = request.FILES.get("file")
     if not uploaded_file:
-
-        return Response(
-            {
-                "message": "File is required.",
-                "field": "file",
-            },
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    filename = (
-        uploaded_file.name
-        .lower()
-        .strip()
-    )
-
-    allowed_extensions = (
-        ".xlsx",
-        ".csv",
-        ".pdf",
-    )
-
-    if not filename.endswith(
-        allowed_extensions
-    ):
-
-        return Response(
-            {
-                "message": (
-                    "Unsupported file format. "
-                    "Supported formats: XLSX, CSV, PDF."
-                ),
-            },
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
+        return Response({"message": "File is required.", "field": "file"}, status=status.HTTP_400_BAD_REQUEST)
+    if not uploaded_file.name.lower().endswith((".xlsx", ".csv", ".pdf")):
+        return Response({"message": "Unsupported file format. Supported formats: XLSX, CSV, PDF."}, status=status.HTTP_400_BAD_REQUEST)
     try:
-
-        result = import_staff_from_file(
-            uploaded_file,
-            admin_user=request.user,
-        )
-
+        result = import_staff_from_file(uploaded_file, admin_user=request.user)
     except ValueError as exc:
-
-        return Response(
-            {
-                "message": str(exc),
-            },
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
+        return Response({"message": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as exc:
-
-        return Response(
-            {
-                "message": "Staff import failed.",
-                "error": str(exc),
-            },
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
-
-    created_staff = result.get(
-        "created_staff",
-        [],
-    )
-
-    ignored_staff = result.get(
-        "ignored_staff",
-        [],
-    )
-
-    failed_staff = result.get(
-        "failed_staff",
-        [],
-    )
-
-    # ========================================================
-    # DOWNLOAD TOKEN
-    # ========================================================
-
+        return Response({"message": "Staff import failed.", "error": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    created = result.get("created_staff", [])
+    ignored = result.get("ignored_staff", [])
+    failed = result.get("failed_staff", [])
     token = uuid.uuid4().hex
+    cache.set(f"staff_import:{token}", {"created_staff": created, "ignored_staff": ignored, "failed_staff": failed}, timeout=3600)
+    return Response({
+        "message": "Staff import completed",
+        "source_file": uploaded_file.name,
+        "created_count": len(created),
+        "ignored_count": len(ignored),
+        "failed_count": len(failed),
+        "created_staff": created,
+        "ignored_staff": ignored,
+        "failed_staff": failed,
+        "download_token": token,
+        "download_url": f"/api/staff/bulk-upload/download/{token}/",
+    })
 
-    cache.set(
-        f"staff_import:{token}",
-        {
-            "created_staff": created_staff,
-            "ignored_staff": ignored_staff,
-            "failed_staff": failed_staff,
-        },
-        timeout=3600,
-    )
 
-    return Response(
-        {
-            "message": "Staff import completed",
-
-            "source_file": uploaded_file.name,
-
-            "created_count": len(
-                created_staff
-            ),
-
-            "ignored_count": len(
-                ignored_staff
-            ),
-
-            "failed_count": len(
-                failed_staff
-            ),
-
-            "created_staff": created_staff,
-
-            "ignored_staff": ignored_staff,
-
-            "failed_staff": failed_staff,
-
-            "download_token": token,
-
-            "download_url": (
-                "/api/staff/bulk-upload/"
-                f"download/{token}/"
-            ),
-        },
-        status=status.HTTP_200_OK,
-    )
 @api_view(["GET"])
 @permission_classes([IsAdminRole])
-def download_staff_import_result(
-    request,
-    token,
-):
-
-    result = cache.get(
-        f"staff_import:{token}"
-    )
-
+def download_staff_import_result(request, token):
+    result = cache.get(f"staff_import:{token}")
     if not result:
-
-        return Response(
-            {
-                "message": (
-                    "Import result not found "
-                    "or expired."
-                ),
-            },
-            status=status.HTTP_404_NOT_FOUND,
-        )
-
+        return Response({"message": "Import result not found or expired."}, status=status.HTTP_404_NOT_FOUND)
     try:
-
-        excel_file = (
-            generate_staff_import_result_excel(
-                created_staff=result.get(
-                    "created_staff",
-                    [],
-                ),
-
-                ignored_staff=result.get(
-                    "ignored_staff",
-                    [],
-                ),
-
-                failed_staff=result.get(
-                    "failed_staff",
-                    [],
-                ),
-            )
+        excel_file = generate_staff_import_result_excel(
+            created_staff=result.get("created_staff", []),
+            ignored_staff=result.get("ignored_staff", []),
+            failed_staff=result.get("failed_staff", []),
         )
-
     except Exception as exc:
-
-        return Response(
-            {
-                "message": (
-                    "Failed to generate "
-                    "Excel result."
-                ),
-
-                "error": str(exc),
-            },
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
-
-    response = HttpResponse(
-        excel_file.getvalue(),
-        content_type=(
-            "application/vnd.openxmlformats-officedocument."
-            "spreadsheetml.sheet"
-        ),
-    )
-
-    response[
-        "Content-Disposition"
-    ] = (
-        'attachment; '
-        'filename="staff_import_result.xlsx"'
-    )
-
+        return Response({"message": "Failed to generate Excel result.", "error": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    response = HttpResponse(excel_file.getvalue(), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    response["Content-Disposition"] = 'attachment; filename="staff_import_result.xlsx"'
     return response
+

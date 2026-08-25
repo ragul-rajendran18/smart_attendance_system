@@ -134,10 +134,13 @@
     }
     .login-brand .icon {
       width: 60px; height: 60px; border-radius: 16px;
-      background: linear-gradient(135deg, #6c63ff, #8b5cf6);
       display: inline-flex; align-items: center; justify-content: center;
-      font-size: 1.6rem; margin-bottom: 0.75rem;
+      margin-bottom: 0.75rem;
       box-shadow: 0 8px 32px var(--primary-glow);
+      overflow: hidden;
+    }
+    .login-brand .icon img {
+      width: 100%; height: 100%; object-fit: contain;
     }
     .login-brand h1 { font-size: 1.5rem; font-weight: 700; }
     .login-brand p  { font-size: 0.85rem; color: var(--muted); margin-top: 0.25rem; }
@@ -159,8 +162,11 @@
     .topbar-brand { display: flex; align-items: center; gap: 0.6rem; }
     .topbar-brand .dot {
       width: 32px; height: 32px; border-radius: 8px;
-      background: linear-gradient(135deg, #6c63ff, #8b5cf6);
       display: flex; align-items: center; justify-content: center; font-size: 0.9rem;
+      overflow: hidden;
+    }
+    .topbar-brand .dot img {
+      width: 100%; height: 100%; object-fit: contain;
     }
     .topbar-brand span { font-weight: 700; font-size: 1rem; }
     .topbar-right { display: flex; align-items: center; gap: 0.75rem; }
@@ -173,26 +179,38 @@
     .role-STUDENT { background: rgba(34,211,165,0.15); color: var(--success); border: 1px solid rgba(34,211,165,0.3); }
 
     /* Tab Nav */
+    .app-body { display: flex; flex: 1; min-height: 0; }
     .tabnav {
-      display: flex; align-items: center; gap: 0.25rem;
-      padding: 0.75rem 1.75rem;
+      display: flex; flex-direction: column; align-items: stretch; gap: 0.35rem;
+      width: 230px; flex: 0 0 230px;
+      padding: 1.25rem 0.85rem;
       background: rgba(10,15,30,0.6);
-      border-bottom: 1px solid var(--border);
-      overflow-x: auto;
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
     }
-    .tabnav::-webkit-scrollbar { display: none; }
+    .tabnav::-webkit-scrollbar { width: 0; }
     .tab-btn {
-      padding: 0.45rem 1rem; border-radius: 8px; border: none;
+      padding: 0.7rem 0.9rem; border-radius: 8px; border: none;
       background: transparent; color: var(--muted);
       font-family: inherit; font-size: 0.83rem; font-weight: 500;
-      cursor: pointer; white-space: nowrap;
+      cursor: pointer; white-space: nowrap; text-align: left;
       transition: all 0.18s;
     }
     .tab-btn:hover   { color: var(--text); background: rgba(255,255,255,0.05); }
     .tab-btn.active  { background: rgba(108,99,255,0.2); color: var(--primary); }
 
     /* Main content */
-    .main { flex: 1; padding: 1.75rem; max-width: 900px; margin: 0 auto; width: 100%; }
+    .main { flex: 1; padding: 1.75rem; max-width: 1100px; margin: 0 auto; width: 100%; overflow: auto; }
+    @media (max-width: 760px) {
+      .app-body { flex-direction: column; }
+      .tabnav {
+        width: 100%; flex: 0 0 auto; flex-direction: row;
+        padding: 0.6rem 0.75rem; border-right: none;
+        border-bottom: 1px solid var(--border); overflow-x: auto;
+      }
+      .tab-btn { text-align: center; }
+      .main { padding: 1.1rem; }
+    }
 
     /* Section panels */
     .panel { display: none; animation: fadeUp 0.3s ease; }
@@ -226,6 +244,14 @@
     th { padding: 0.75rem 1rem; text-align: left; font-size: 0.78rem; color: var(--muted); font-weight: 600; letter-spacing: 0.3px; text-transform: uppercase; white-space: nowrap; }
     td { padding: 0.75rem 1rem; font-size: 0.87rem; border-top: 1px solid var(--border); }
     tbody tr:hover { background: rgba(255,255,255,0.03); }
+    .student-actions { display: flex; justify-content: flex-end; gap: 0.4rem; }
+    .icon-btn {
+      width: 32px; height: 32px; padding: 0; border: 1px solid var(--border);
+      border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center; font-size: 1rem;
+    }
+    .icon-btn:hover { color: var(--text); border-color: var(--primary); }
+    .icon-btn.delete:hover { color: var(--danger); border-color: var(--danger); }
 
     /* ── Attendance Toggle ── */
     .att-toggle {
@@ -430,7 +456,7 @@
 <div id="login-page">
   <div class="login-box">
     <div class="login-brand">
-      <div class="icon">🎓</div>
+      <div class="icon"><img src="images.jpg" alt="Smart Attendance Logo" /></div>
       <h1>Smart Attendance</h1>
       <p>Role-based attendance management system</p>
     </div>
@@ -458,7 +484,7 @@
   <!-- Topbar -->
   <div class="topbar">
     <div class="topbar-brand">
-      <div class="dot">🎓</div>
+      <div class="dot"><img src="images.jpg" alt="Smart Attendance Logo" /></div>
       <span>Smart Attendance</span>
     </div>
     <div class="topbar-right">
@@ -468,15 +494,16 @@
     </div>
   </div>
 
-  <!-- Tab Navigation -->
-  <div class="tabnav" id="tabnav"></div>
+  <div class="app-body">
+    <!-- Tab Navigation -->
+    <div class="tabnav" id="tabnav"></div>
 
-  <!-- Main Content -->
-  <div class="main">
+    <!-- Main Content -->
+    <div class="main">
 
     <!-- ── ADMIN: Create Student ── -->
     <div class="panel" id="panel-create-student">
-      <div class="panel-title"><span>👤</span> Create Student</div>
+      <div class="panel-title">Create Student</div>
       <div class="grid-2">
         <div class="card">
           <div class="form-group">
@@ -503,7 +530,7 @@
           <div id="cs-result" class="hidden"></div>
         </div>
         <div class="card" style="color:var(--muted);font-size:0.87rem;line-height:1.7;">
-          <p class="font-semibold text-sm" style="color:var(--text);margin-bottom:0.75rem;">📌 How it works</p>
+          <p class="font-semibold text-sm" style="color:var(--text);margin-bottom:0.75rem;">How it works</p>
           <p>Fill in the student details and click <strong style="color:var(--text);">Create Student</strong>.</p>
           <br/>
           <p>The system will auto-generate a unique <strong style="color:var(--text);">username</strong> and a secure <strong style="color:var(--text);">password</strong> for the student to log in.</p>
@@ -515,7 +542,7 @@
 
     <!-- ── ADMIN: Create Staff ── -->
     <div class="panel" id="panel-create-staff">
-      <div class="panel-title"><span>🧑‍🏫</span> Create Staff</div>
+      <div class="panel-title">Create Staff</div>
       <div class="grid-2">
         <div class="card">
           <div class="form-group">
@@ -532,7 +559,7 @@
           <div id="cf-result" class="hidden"></div>
         </div>
         <div class="card" style="color:var(--muted);font-size:0.87rem;line-height:1.7;">
-          <p class="font-semibold text-sm" style="color:var(--text);margin-bottom:0.75rem;">📌 How it works</p>
+          <p class="font-semibold text-sm" style="color:var(--text);margin-bottom:0.75rem;">How it works</p>
           <p>Enter the staff member's name and unique Staff ID.</p>
           <br/>
           <p>Credentials will be auto-generated. Share them securely with the staff member.</p>
@@ -542,7 +569,7 @@
 
     <!-- ── ADMIN: Create Subject ── -->
     <div class="panel" id="panel-create-subject">
-      <div class="panel-title"><span>📚</span> Create Subject</div>
+      <div class="panel-title">Create Subject</div>
       <div class="grid-2">
         <div class="card">
           <div class="form-group">
@@ -561,7 +588,7 @@
           <div id="csub-result" class="hidden"></div>
         </div>
         <div class="card" style="color:var(--muted);font-size:0.87rem;line-height:1.7;">
-          <p class="font-semibold text-sm" style="color:var(--text);margin-bottom:0.75rem;">📌 Class subjects</p>
+          <p class="font-semibold text-sm" style="color:var(--text);margin-bottom:0.75rem;">Class subjects</p>
           <p>Subjects are grouped by class name.</p>
           <br/>
           <p>Staff can choose a class in the dashboard to see its subjects.</p>
@@ -571,7 +598,7 @@
 
     <!-- ── ADMIN: Create Batch ── -->
     <div class="panel" id="panel-create-batch">
-      <div class="panel-title"><span>🎓</span> Create Batch</div>
+      <div class="panel-title">Create Batch</div>
       <div class="grid-2">
         <div class="card">
           <div class="form-group">
@@ -582,7 +609,7 @@
           <div id="cb-result" class="hidden"></div>
         </div>
         <div class="card" style="color:var(--muted);font-size:0.87rem;line-height:1.7;">
-          <p class="font-semibold text-sm" style="color:var(--text);margin-bottom:0.75rem;">📌 Batch format</p>
+          <p class="font-semibold text-sm" style="color:var(--text);margin-bottom:0.75rem;">Batch format</p>
           <p>Use the admission year and graduation year, for example <strong style="color:var(--text);">2029-2033</strong>.</p>
           <br/>
           <p>New batches can be added here without changing the application code.</p>
@@ -593,14 +620,14 @@
 
     <!-- ── ADMIN: BULK IMPORT ── -->
     <div class="panel" id="panel-bulk-import">
-      <div class="panel-title"><span>📥</span> Bulk Import</div>
+      <div class="panel-title">Bulk Import</div>
 
       <div class="bulk-import-grid">
         <!-- Student bulk upload -->
         <div class="card bulk-card">
           <div class="bulk-card-head">
             <div>
-              <div class="bulk-icon student">👤</div>
+              <div class="bulk-icon student">ST</div>
               <div class="bulk-title">Students</div>
               <p class="text-muted text-sm">Create multiple student accounts from one file.</p>
             </div>
@@ -611,7 +638,7 @@
             <input id="student-bulk-file" type="file"
                    accept=".xlsx,.csv,.pdf"
                    onchange="handleBulkFile('student')"/>
-            <div class="upload-icon">☁️</div>
+            <div class="upload-icon">Upload</div>
             <strong id="student-file-title">Choose student file</strong>
             <span id="student-file-name" class="text-muted text-sm">or drag & drop here</span>
           </div>
@@ -619,7 +646,7 @@
           <div class="upload-actions">
             <button class="btn btn-primary" id="student-upload-btn"
                     onclick="uploadBulk('student')">
-              ⬆️ Upload Students
+              Upload Students
             </button>
             <button class="btn btn-outline" id="student-clear-btn"
                     onclick="clearBulk('student')">
@@ -634,7 +661,7 @@
         <div class="card bulk-card">
           <div class="bulk-card-head">
             <div>
-              <div class="bulk-icon staff">🧑‍🏫</div>
+              <div class="bulk-icon staff">SF</div>
               <div class="bulk-title">Staff</div>
               <p class="text-muted text-sm">Create multiple staff accounts from one file.</p>
             </div>
@@ -645,7 +672,7 @@
             <input id="staff-bulk-file" type="file"
                    accept=".xlsx,.csv,.pdf"
                    onchange="handleBulkFile('staff')"/>
-            <div class="upload-icon">☁️</div>
+            <div class="upload-icon">Upload</div>
             <strong id="staff-file-title">Choose staff file</strong>
             <span id="staff-file-name" class="text-muted text-sm">or drag & drop here</span>
           </div>
@@ -653,7 +680,7 @@
           <div class="upload-actions">
             <button class="btn btn-primary" id="staff-upload-btn"
                     onclick="uploadBulk('staff')">
-              ⬆️ Upload Staff
+              Upload Staff
             </button>
             <button class="btn btn-outline" id="staff-clear-btn"
                     onclick="clearBulk('staff')">
@@ -667,7 +694,7 @@
 
       <div class="card import-guide">
         <div>
-          <div class="font-semibold" style="margin-bottom:.35rem;">📌 Supported column names</div>
+          <div class="font-semibold" style="margin-bottom:.35rem;">Supported column names</div>
           <p class="text-muted text-sm">
             Staff accepts names such as <strong>Staff Name</strong>, <strong>Teacher Name</strong>,
             <strong>Professor Name</strong>, <strong>Faculty Name</strong> and IDs such as
@@ -684,7 +711,7 @@
 
     <!-- ── ADMIN: Weekly Report ── -->
     <div class="panel" id="panel-weekly-report">
-      <div class="panel-title"><span>📊</span> Weekly Report</div>
+      <div class="panel-title">Weekly Report</div>
       <div class="grid-2">
         <div class="card">
           <div class="form-group">
@@ -710,7 +737,7 @@
           </button>
         </div>
         <div class="card" style="color:var(--muted);font-size:0.87rem;line-height:1.7;">
-          <p class="font-semibold text-sm" style="color:var(--text);margin-bottom:0.75rem;">📌 Report filters</p>
+          <p class="font-semibold text-sm" style="color:var(--text);margin-bottom:0.75rem;">Report filters</p>
           <p>Select a class, batch, and date range. The report checks every period in the range.</p>
           <br/>
           <p>The existing Excel structure is preserved. The OD column remains empty.</p>
@@ -718,9 +745,151 @@
       </div>
     </div>
 
+    <!-- ── ADMIN: Student List ── -->
+    <div class="panel" id="panel-student-list">
+      <div class="panel-title">Student List</div>
+      <div class="card" style="margin-bottom:1.25rem;">
+        <div class="grid-2">
+          <div class="form-group" style="margin-bottom:0;">
+            <label for="sl-class">Class Name</label>
+            <input id="sl-class" type="text" placeholder="e.g. IV IT B"/>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label for="sl-batch">Batch</label>
+            <select id="sl-batch" required>
+              <option value="">Select batch</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="loadStudentList()" style="margin-top:1rem;">Search Students</button>
+      </div>
+      <div id="student-list-result" class="table-wrap hidden">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Register No.</th>
+              <th>Student Name</th>
+              <th>Class Name</th>
+              <th>Batch</th>
+              <th style="text-align:right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="student-list-body"></tbody>
+        </table>
+      </div>
+      <div id="student-list-empty" class="card hidden" style="color:var(--muted);text-align:center;">
+        No students found for the selected class and batch.
+      </div>
+      <div id="student-edit-modal" class="card hidden" style="margin-top:1.25rem;">
+        <div class="panel-title" style="font-size:1rem;">Edit Student</div>
+        <input id="edit-student-id" type="hidden" />
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="edit-student-name">Student Name</label>
+            <input id="edit-student-name" type="text" />
+          </div>
+          <div class="form-group">
+            <label for="edit-student-regno">Register No.</label>
+            <input id="edit-student-regno" type="text" />
+          </div>
+          <div class="form-group">
+            <label for="edit-student-class">Class Name</label>
+            <input id="edit-student-class" type="text" />
+          </div>
+          <div class="form-group">
+            <label for="edit-student-batch">Batch</label>
+            <select id="edit-student-batch"></select>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <button class="btn btn-primary" onclick="updateStudent()">Save Changes</button>
+          <button class="btn btn-outline" onclick="closeStudentEditor()">Cancel</button>
+        </div>
+      </div>
+    </div>
+
     <!-- ── STAFF: Profile ── -->
+    <!-- ADMIN: Staff List -->
+    <div class="panel" id="panel-staff-list">
+      <div class="flex items-center justify-between gap-3" style="margin-bottom:1.25rem;">
+        <div class="panel-title" style="margin-bottom:0;">Staff List</div>
+        <button class="btn btn-outline btn-sm" onclick="loadStaffList()">Refresh</button>
+      </div>
+      <div id="staff-list-result" class="table-wrap hidden">
+        <table><thead><tr><th>#</th><th>Staff ID</th><th>Staff Name</th><th>Username</th><th style="text-align:right;">Actions</th></tr></thead>
+          <tbody id="staff-list-body"></tbody>
+        </table>
+      </div>
+      <div id="staff-list-empty" class="card hidden" style="color:var(--muted);text-align:center;">No staff members found.</div>
+      <div id="staff-edit-modal" class="card hidden" style="margin-top:1.25rem;">
+        <div class="panel-title" style="font-size:1rem;">Edit Staff</div>
+        <input id="edit-staff-id" type="hidden" />
+        <div class="grid-2">
+          <div class="form-group"><label for="edit-staff-name">Staff Name</label><input id="edit-staff-name" type="text" /></div>
+          <div class="form-group"><label for="edit-staff-code">Staff ID</label><input id="edit-staff-code" type="text" /></div>
+          <div class="form-group"><label for="edit-staff-password">New Password <span class="text-muted">(optional)</span></label><input id="edit-staff-password" type="password" autocomplete="new-password" placeholder="Leave empty to keep current password" /></div>
+        </div>
+        <div class="flex gap-2"><button class="btn btn-primary" onclick="updateStaff()">Save Changes</button><button class="btn btn-outline" onclick="closeStaffEditor()">Cancel</button></div>
+      </div>
+    </div>
+
+    <!-- ── ADMIN: Subject List ── -->
+    <div class="panel" id="panel-subject-list">
+      <div class="flex items-center justify-between gap-3" style="margin-bottom:1.25rem;">
+        <div class="panel-title" style="margin-bottom:0;">Subject List</div>
+        <button class="btn btn-outline btn-sm" onclick="loadSubjectList()">Refresh</button>
+      </div>
+      <div class="card" style="margin-bottom:1.25rem;">
+        <div class="form-group" style="margin-bottom:0;">
+          <label for="sublist-class">Filter by Class Name <span class="text-muted">(optional)</span></label>
+          <input id="sublist-class" type="text" placeholder="e.g. II IT A — leave empty to show all"/>
+        </div>
+        <button class="btn btn-primary" onclick="loadSubjectList()" style="margin-top:1rem;">Search Subjects</button>
+      </div>
+      <div id="subject-list-result" class="table-wrap hidden">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Subject Code</th>
+              <th>Subject Name</th>
+              <th>Class Name</th>
+              <th style="text-align:right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="subject-list-body"></tbody>
+        </table>
+      </div>
+      <div id="subject-list-empty" class="card hidden" style="color:var(--muted);text-align:center;">
+        No subjects found.
+      </div>
+      <div id="subject-edit-modal" class="card hidden" style="margin-top:1.25rem;">
+        <div class="panel-title" style="font-size:1rem;">Edit Subject</div>
+        <input id="edit-subject-id" type="hidden"/>
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="edit-subject-code">Subject Code</label>
+            <input id="edit-subject-code" type="text" placeholder="e.g. CS301"/>
+          </div>
+          <div class="form-group">
+            <label for="edit-subject-name">Subject Name</label>
+            <input id="edit-subject-name" type="text" placeholder="e.g. Database Systems"/>
+          </div>
+          <div class="form-group">
+            <label for="edit-subject-class">Class Name</label>
+            <input id="edit-subject-class" type="text" placeholder="e.g. II IT A"/>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <button class="btn btn-primary" onclick="updateSubject()">Save Changes</button>
+          <button class="btn btn-outline" onclick="closeSubjectEditor()">Cancel</button>
+        </div>
+      </div>
+    </div>
+
     <div class="panel" id="panel-staff-profile">
-      <div class="panel-title"><span>🪪</span> My Profile</div>
+      <div class="panel-title">My Profile</div>
       <div class="card" id="staff-profile-content">
         <div class="loading-row"><div class="spinner"></div></div>
       </div>
@@ -728,9 +897,9 @@
 
     <!-- ── STAFF: Dashboard ── -->
     <div class="panel" id="panel-staff-dashboard">
-      <div class="panel-title"><span>📊</span> Dashboard</div>
+      <div class="panel-title">Dashboard</div>
       <div class="card" style="margin-bottom:1.25rem;">
-        <div class="panel-title" style="font-size:1rem;margin-bottom:1rem;"><span>🎯</span> Choose Class and Subject</div>
+        <div class="panel-title" style="font-size:1rem;margin-bottom:1rem;">Choose Class and Subject</div>
         <div class="grid-2">
           <div class="form-group" style="margin-bottom:0;">
             <label for="dash-class">Class Name</label>
@@ -741,16 +910,17 @@
             <select id="dash-subject" onchange="selectDashboardSubject(this.value)" disabled><option value="">Select a class first</option></select>
           </div>
         </div>
-        <button class="btn btn-success" onclick="useDashboardSelection()" style="margin-top:1rem;">▶️ Start Attendance</button>
+        <button class="btn btn-success" onclick="useDashboardSelection()" style="margin-top:1rem;">Start Attendance</button>
       </div>
       <div id="dash-content">
         <div class="loading-row"><div class="spinner"></div></div>
       </div>
+      <div id="session-attendance-detail" class="card hidden" style="margin-top:1.25rem;"></div>
     </div>
 
     <!-- ── STAFF: Start Session ── -->
     <div class="panel" id="panel-start-session">
-      <div class="panel-title"><span>▶️</span> Start Session</div>
+      <div class="panel-title">Start Session</div>
       <div class="grid-2">
         <div class="card">
           <div class="form-group">
@@ -785,7 +955,7 @@
           <strong id="session-info-text">Session Active</strong>
           <span id="session-meta" class="text-sm text-muted" style="margin-left:0.5rem;"></span>
         </div>
-        <div class="panel-title" style="margin-bottom:1rem;"><span>✅</span> Mark Attendance</div>
+        <div class="panel-title" style="margin-bottom:1rem;">Mark Attendance</div>
         <div class="table-wrap">
           <table>
             <thead>
@@ -800,16 +970,16 @@
           </table>
         </div>
         <div style="margin-top:1rem;display:flex;gap:0.75rem;flex-wrap:wrap;">
-          <button class="btn btn-outline btn-sm" onclick="markAll('Present')">✅ Mark All Present</button>
-          <button class="btn btn-outline btn-sm" onclick="markAll('Absent')">❌ Mark All Absent</button>
-          <button class="btn btn-success" onclick="saveAttendance()" style="margin-left:auto;">💾 Save Attendance</button>
+          <button class="btn btn-outline btn-sm" onclick="markAll('Present')">Mark All Present</button>
+          <button class="btn btn-outline btn-sm" onclick="markAll('Absent')">Mark All Absent</button>
+          <button class="btn btn-success" onclick="saveAttendance()" style="margin-left:auto;">Save Attendance</button>
         </div>
       </div>
     </div>
 
     <!-- ── STUDENT: Profile ── -->
     <div class="panel" id="panel-student-profile">
-      <div class="panel-title"><span>🪪</span> My Profile</div>
+      <div class="panel-title">My Profile</div>
       <div class="card" id="student-profile-content">
         <div class="loading-row"><div class="spinner"></div></div>
       </div>
@@ -817,7 +987,7 @@
 
     <!-- ── STUDENT: Attendance ── -->
     <div class="panel" id="panel-student-attendance">
-      <div class="panel-title"><span>📋</span> My Attendance</div>
+      <div class="panel-title">My Attendance</div>
       <div id="att-summary" class="stat-grid hidden"></div>
       <div id="att-records" class="table-wrap hidden">
         <table>
@@ -830,7 +1000,8 @@
       <div class="loading-row" id="att-loading"><div class="spinner"></div></div>
     </div>
 
-  </div><!-- /.main -->
+    </div><!-- /.main -->
+  </div><!-- /.app-body -->
 </div><!-- /#app-shell -->
 
 <script>
@@ -839,6 +1010,7 @@
   let userRole    = localStorage.getItem('role')   || null;
   let currentSessionId = null;
   let sessionStudents  = [];
+  let staffDirectory = new Map();
 
   /* ── Init ── */
   window.onload = () => {
@@ -895,21 +1067,24 @@
   ══════════════════════ */
   const TABS = {
     ADMIN: [
-      { id: 'create-student', label: '👤 Create Student' },
-      { id: 'create-staff',   label: '🧑‍🏫 Create Staff'   },
-      { id: 'create-subject', label: '📚 Create Subject' },
-      { id: 'create-batch',   label: '🎓 Create Batch'   },
-      { id: 'bulk-import',    label: '📥 Bulk Import'     },
-      { id: 'weekly-report',  label: '📊 Weekly Report'  },
+      { id: 'create-student', label: 'Create Student' },
+      { id: 'create-staff',   label: 'Create Staff'   },
+      { id: 'create-subject', label: 'Create Subject' },
+      { id: 'create-batch',   label: 'Create Batch'   },
+      { id: 'bulk-import',    label: 'Bulk Import'     },
+      { id: 'weekly-report',  label: 'Weekly Report'  },
+      { id: 'student-list',   label: 'Student List'   },
+      { id: 'staff-list',     label: 'Staff List'     },
+      { id: 'subject-list',   label: 'Subject List'   },
     ],
     STAFF: [
-      { id: 'staff-profile',   label: '🪪 Profile'       },
-      { id: 'staff-dashboard', label: '📊 Dashboard'     },
-      { id: 'start-session',   label: '▶️ Start Session' },
+      { id: 'staff-profile',   label: 'Profile'       },
+      { id: 'staff-dashboard', label: 'Dashboard'     },
+      { id: 'start-session',   label: 'Start Session' },
     ],
     STUDENT: [
-      { id: 'student-profile',    label: '🪪 Profile'    },
-      { id: 'student-attendance', label: '📋 Attendance' },
+      { id: 'student-profile',    label: 'Profile'    },
+      { id: 'student-attendance', label: 'Attendance' },
     ],
   };
 
@@ -932,6 +1107,8 @@
       loadStaffClasses();
     } else if (userRole === 'ADMIN') {
       loadBatches();
+      loadStaffList();
+      loadSubjectList();
     } else if (userRole === 'STUDENT') {
       loadStudentProfile();
       loadStudentAttendance();
@@ -991,19 +1168,114 @@
   async function loadBatches() {
     const select = document.getElementById('cs-batch');
     const reportSelect = document.getElementById('wr-batch');
+    const studentListSelect = document.getElementById('sl-batch');
     const res = await api('GET', '/batches/');
     if (!res.ok) {
       select.innerHTML = '<option value="">Unable to load batches</option>';
       reportSelect.innerHTML = '<option value="">Unable to load batches</option>';
+      studentListSelect.innerHTML = '<option value="">Unable to load batches</option>';
       return;
     }
 
     select.innerHTML = '<option value="">Select batch</option>';
     reportSelect.innerHTML = '<option value="">Select batch</option>';
+    studentListSelect.innerHTML = '<option value="">Select batch</option>';
+    const editBatchSelect = document.getElementById('edit-student-batch');
+    editBatchSelect.innerHTML = '<option value="">Select batch</option>';
     res.data.forEach(batch => {
       select.innerHTML += `<option value="${batch.id}">${batch.name}</option>`;
       reportSelect.innerHTML += `<option value="${batch.id}">${batch.name}</option>`;
+      studentListSelect.innerHTML += `<option value="${batch.id}">${batch.name}</option>`;
+      editBatchSelect.innerHTML += `<option value="${batch.id}">${batch.name}</option>`;
     });
+  }
+
+  async function loadStudentList() {
+    const className = document.getElementById('sl-class').value.trim();
+    const batch = document.getElementById('sl-batch').value;
+    const result = document.getElementById('student-list-result');
+    const empty = document.getElementById('student-list-empty');
+    const body = document.getElementById('student-list-body');
+
+    if (!className || !batch) {
+      toast('Class name and batch are required', 'error'); return;
+    }
+
+    const query = new URLSearchParams({ class_name: className, batch });
+    const res = await api('GET', `/student-list/?${query}`);
+    if (!res.ok) {
+      result.classList.add('hidden');
+      empty.classList.add('hidden');
+      toast(res.data.message || 'Unable to load students', 'error'); return;
+    }
+
+    body.innerHTML = '';
+    if (!res.data.students || res.data.students.length === 0) {
+      result.classList.add('hidden');
+      empty.classList.remove('hidden');
+      return;
+    }
+
+    res.data.students.forEach((student, index) => {
+      body.innerHTML += `
+        <tr>
+          <td>${index + 1}</td>
+          <td>${escapeHtml(student.register_no)}</td>
+          <td>${escapeHtml(student.student_name)}</td>
+          <td>${escapeHtml(student.class_name)}</td>
+          <td>${escapeHtml(student.batch || '-')}</td>
+          <td><div class="student-actions">
+            <button class="icon-btn" title="Edit student" aria-label="Edit student" onclick="openStudentEditor(${JSON.stringify(student).replace(/"/g, '&quot;')})">&#9998;</button>
+            <button class="icon-btn delete" title="Delete student" aria-label="Delete student" onclick="deleteStudent(${student.id})">&#128465;</button>
+          </div></td>
+        </tr>`;
+    });
+    empty.classList.add('hidden');
+    result.classList.remove('hidden');
+  }
+
+  function openStudentEditor(student) {
+    document.getElementById('edit-student-id').value = student.id;
+    document.getElementById('edit-student-name').value = student.student_name;
+    document.getElementById('edit-student-regno').value = student.register_no;
+    document.getElementById('edit-student-class').value = student.class_name;
+    document.getElementById('edit-student-batch').value = student.batch_id || '';
+    document.getElementById('student-edit-modal').classList.remove('hidden');
+  }
+
+  function closeStudentEditor() {
+    document.getElementById('student-edit-modal').classList.add('hidden');
+  }
+
+  async function updateStudent() {
+    const body = {
+      id: document.getElementById('edit-student-id').value,
+      student_name: document.getElementById('edit-student-name').value.trim(),
+      register_no: document.getElementById('edit-student-regno').value.trim(),
+      class_name: document.getElementById('edit-student-class').value.trim(),
+      batch: document.getElementById('edit-student-batch').value,
+    };
+    if (!body.student_name || !body.register_no || !body.class_name || !body.batch) {
+      toast('All fields are required', 'error'); return;
+    }
+    const res = await api('PUT', '/update-student/', body);
+    if (!res.ok) {
+      toast(JSON.stringify(res.data), 'error'); return;
+    }
+    closeStudentEditor();
+    toast('Student updated!', 'success');
+    loadStudentList();
+  }
+
+  async function deleteStudent(studentId) {
+    if (!confirm('Delete this student and their login account?')) return;
+    const res = await api('DELETE', '/delete-student/', { id: studentId });
+    if (!res.ok) {
+      toast(res.data.message || 'Unable to delete student', 'error'); return;
+    }
+    closeStudentEditor();
+    toast('Student deleted!', 'success');
+    loadStudentList();
   }
 
   async function downloadWeeklyReport() {
@@ -1067,9 +1339,198 @@
       box.innerHTML = credBox(res.data.username, res.data.password, res.data.message);
       document.getElementById('cf-name').value = '';
       document.getElementById('cf-id').value = '';
+      loadStaffList();
     } else {
       toast(JSON.stringify(res.data), 'error');
     }
+  }
+
+  async function loadStaffList() {
+    const result = document.getElementById('staff-list-result');
+    const empty = document.getElementById('staff-list-empty');
+    const body = document.getElementById('staff-list-body');
+    const res = await api('GET', '/staff-list/');
+    if (!res.ok) {
+      result.classList.add('hidden');
+      empty.classList.add('hidden');
+      toast(res.data.message || 'Unable to load staff', 'error');
+      return;
+    }
+
+    const staffMembers = res.data.staff || [];
+    staffDirectory = new Map(staffMembers.map(staff => [String(staff.id), staff]));
+    body.innerHTML = '';
+    if (!staffMembers.length) {
+      result.classList.add('hidden');
+      empty.classList.remove('hidden');
+      return;
+    }
+
+    staffMembers.forEach((staff, index) => {
+      body.innerHTML += `
+        <tr>
+          <td>${index + 1}</td>
+          <td>${escapeHtml(staff.staff_id)}</td>
+          <td>${escapeHtml(staff.staff_name)}</td>
+          <td>${escapeHtml(staff.username)}</td>
+          <td><div class="student-actions">
+            <button class="icon-btn" title="Edit staff" aria-label="Edit staff" onclick="openStaffEditor(${staff.id})">&#9998;</button>
+            <button class="icon-btn delete" title="Delete staff" aria-label="Delete staff" onclick="deleteStaff(${staff.id})">&#128465;</button>
+          </div></td>
+        </tr>`;
+    });
+    empty.classList.add('hidden');
+    result.classList.remove('hidden');
+  }
+
+  function openStaffEditor(id) {
+    const staff = staffDirectory.get(String(id));
+    if (!staff) { toast('Staff record is no longer available', 'error'); return; }
+    document.getElementById('edit-staff-id').value = staff.id;
+    document.getElementById('edit-staff-name').value = staff.staff_name;
+    document.getElementById('edit-staff-code').value = staff.staff_id;
+    document.getElementById('edit-staff-password').value = '';
+    document.getElementById('staff-edit-modal').classList.remove('hidden');
+  }
+
+  function closeStaffEditor() {
+    document.getElementById('staff-edit-modal').classList.add('hidden');
+  }
+
+  async function updateStaff() {
+    const body = {
+      id: document.getElementById('edit-staff-id').value,
+      staff_name: document.getElementById('edit-staff-name').value.trim(),
+      staff_id: document.getElementById('edit-staff-code').value.trim(),
+    };
+    const password = document.getElementById('edit-staff-password').value;
+    if (!body.staff_name || !body.staff_id) {
+      toast('Staff name and Staff ID are required', 'error');
+      return;
+    }
+    if (password) body.password = password;
+
+    const res = await api('PUT', '/update-staff/', body);
+    if (!res.ok) {
+      toast(res.data.message || JSON.stringify(res.data), 'error');
+      return;
+    }
+    closeStaffEditor();
+    toast('Staff updated!', 'success');
+    loadStaffList();
+  }
+
+  async function deleteStaff(staffId) {
+    const staff = staffDirectory.get(String(staffId));
+    const label = staff ? staff.staff_name : 'this staff member';
+    if (!confirm(`Delete ${label} and their login account?`)) return;
+
+    const res = await api('DELETE', '/delete-staff/', { id: staffId });
+    if (!res.ok) {
+      toast(res.data.message || 'Unable to delete staff', 'error');
+      return;
+    }
+    closeStaffEditor();
+    toast('Staff deleted!', 'success');
+    loadStaffList();
+  }
+
+  /* ══════════════════════
+     ADMIN: SUBJECT LIST
+  ══════════════════════ */
+  let subjectDirectory = new Map();
+
+  async function loadSubjectList() {
+    const className = document.getElementById('sublist-class').value.trim();
+    const result = document.getElementById('subject-list-result');
+    const empty  = document.getElementById('subject-list-empty');
+    const body   = document.getElementById('subject-list-body');
+
+    let url = '/subject-list/';
+    if (className) url += `?class_name=${encodeURIComponent(className)}`;
+
+    const res = await api('GET', url);
+    if (!res.ok) {
+      result.classList.add('hidden');
+      empty.classList.add('hidden');
+      toast(res.data.message || 'Unable to load subjects', 'error');
+      return;
+    }
+
+    const subjects = res.data.subjects || [];
+    subjectDirectory = new Map(subjects.map(s => [String(s.id), s]));
+    body.innerHTML = '';
+
+    if (!subjects.length) {
+      result.classList.add('hidden');
+      empty.classList.remove('hidden');
+      return;
+    }
+
+    subjects.forEach((subject, index) => {
+      body.innerHTML += `
+        <tr>
+          <td>${index + 1}</td>
+          <td>${escapeHtml(subject.subject_code)}</td>
+          <td>${escapeHtml(subject.subject_name)}</td>
+          <td>${escapeHtml(subject.class_name)}</td>
+          <td><div class="student-actions">
+            <button class="icon-btn" title="Edit subject" aria-label="Edit subject"
+                    onclick="openSubjectEditor(${subject.id})">&#9998;</button>
+            <button class="icon-btn delete" title="Delete subject" aria-label="Delete subject"
+                    onclick="deleteSubject(${subject.id})">&#128465;</button>
+          </div></td>
+        </tr>`;
+    });
+    empty.classList.add('hidden');
+    result.classList.remove('hidden');
+  }
+
+  function openSubjectEditor(id) {
+    const subject = subjectDirectory.get(String(id));
+    if (!subject) { toast('Subject record not found', 'error'); return; }
+    document.getElementById('edit-subject-id').value    = subject.id;
+    document.getElementById('edit-subject-code').value  = subject.subject_code;
+    document.getElementById('edit-subject-name').value  = subject.subject_name;
+    document.getElementById('edit-subject-class').value = subject.class_name;
+    document.getElementById('subject-edit-modal').classList.remove('hidden');
+    document.getElementById('subject-edit-modal').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function closeSubjectEditor() {
+    document.getElementById('subject-edit-modal').classList.add('hidden');
+  }
+
+  async function updateSubject() {
+    const body = {
+      id:           document.getElementById('edit-subject-id').value,
+      subject_code: document.getElementById('edit-subject-code').value.trim(),
+      subject_name: document.getElementById('edit-subject-name').value.trim(),
+      class_name:   document.getElementById('edit-subject-class').value.trim(),
+    };
+    if (!body.subject_code || !body.subject_name || !body.class_name) {
+      toast('All fields are required', 'error'); return;
+    }
+    const res = await api('PUT', '/update-subject/', body);
+    if (!res.ok) {
+      toast(res.data.message || JSON.stringify(res.data), 'error'); return;
+    }
+    closeSubjectEditor();
+    toast('Subject updated!', 'success');
+    loadSubjectList();
+  }
+
+  async function deleteSubject(subjectId) {
+    const subject = subjectDirectory.get(String(subjectId));
+    const label = subject ? `${subject.subject_code} — ${subject.subject_name}` : 'this subject';
+    if (!confirm(`Delete ${label}?`)) return;
+    const res = await api('DELETE', '/delete-subject/', { id: subjectId });
+    if (!res.ok) {
+      toast(res.data.message || 'Unable to delete subject', 'error'); return;
+    }
+    closeSubjectEditor();
+    toast('Subject deleted!', 'success');
+    loadSubjectList();
   }
 
   async function createSubject() {
@@ -1086,7 +1547,7 @@
     if (res.ok) {
       toast('Subject created!', 'success');
       box.classList.remove('hidden');
-      box.innerHTML = `<div class="cred-box"><p class="text-sm font-semibold text-success">✅ ${res.data.message}</p><p class="text-sm text-muted" style="margin-top:0.5rem;">${res.data.subject.subject_code} · ${res.data.subject.subject_name} · ${res.data.subject.class_name}</p></div>`;
+      box.innerHTML = `<div class="cred-box"><p class="text-sm font-semibold text-success">${res.data.message}</p><p class="text-sm text-muted" style="margin-top:0.5rem;">${res.data.subject.subject_code} · ${res.data.subject.subject_name} · ${res.data.subject.class_name}</p></div>`;
       document.getElementById('csub-code').value = '';
       document.getElementById('csub-name').value = '';
       document.getElementById('csub-class').value = '';
@@ -1104,7 +1565,7 @@
     if (res.ok) {
       toast('Batch created!', 'success');
       box.classList.remove('hidden');
-      box.innerHTML = `<div class="cred-box"><p class="text-sm font-semibold text-success">✅ ${res.data.message}</p><p class="text-sm text-muted" style="margin-top:0.5rem;">${res.data.batch.name}</p></div>`;
+      box.innerHTML = `<div class="cred-box"><p class="text-sm font-semibold text-success">${res.data.message}</p><p class="text-sm text-muted" style="margin-top:0.5rem;">${res.data.batch.name}</p></div>`;
       document.getElementById('cb-name').value = '';
     } else {
       toast(res.data.name?.[0] || res.data.message || JSON.stringify(res.data), 'error');
@@ -1114,7 +1575,7 @@
   function credBox(username, password, msg) {
     return `
       <div class="cred-box" style="margin-top:1rem;">
-        <p class="text-sm font-semibold text-success" style="margin-bottom:0.75rem;">✅ ${msg}</p>
+        <p class="text-sm font-semibold text-success" style="margin-bottom:0.75rem;">${msg}</p>
         <div class="cred-row">
           <span class="text-xs text-muted">Username</span>
           <div style="display:flex;align-items:center;gap:0.5rem;">
@@ -1163,35 +1624,57 @@
      STAFF DASHBOARD
   ══════════════════════ */
   async function loadStaffDashboard() {
-    const res = await api('GET', '/staff/dashboard/');
+    const res = await api('GET', '/staff/session-list/');
     const el  = document.getElementById('dash-content');
     if (!res.ok) { el.innerHTML = `<p class="text-danger">Error loading dashboard.</p>`; return; }
-    const d = res.data;
-    if (d.message === 'No Active Session') {
-      el.innerHTML = `
-        <div class="card" style="text-align:center;padding:2.5rem;">
-          <div style="font-size:2.5rem;margin-bottom:0.75rem;">🕐</div>
-          <h3 style="font-size:1rem;font-weight:600;">No Active Period</h3>
-          <p class="text-muted text-sm" style="margin-top:0.35rem;">No class is scheduled at this time.</p>
-        </div>`;
-    } else {
-      el.innerHTML = `
-        <div class="session-banner">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:0.75rem;">
-            <div>
-              <p class="text-xs text-muted" style="margin-bottom:0.3rem;"><span class="live-dot"></span>LIVE SESSION</p>
-              <h2 style="font-size:1.1rem;font-weight:700;">Period ${d.period || '—'}</h2>
-            </div>
-            <div style="text-align:right;">
-              <p class="text-xs text-muted">TIME</p>
-              <p class="font-semibold">${d.start_time || '—'} – ${d.end_time || '—'}</p>
-            </div>
-          </div>
-        </div>
-        <div class="card" style="color:var(--muted);font-size:0.87rem;">
-          Go to <strong style="color:var(--text);">"Start Session"</strong> tab to mark attendance for this period.
-        </div>`;
+    const sessions = res.data.sessions || [];
+    const sessionRows = sessions.length ? sessions.map(session => `
+      <tr>
+        <td>${escapeHtml(session.date)}</td>
+        <td><button class="btn btn-outline btn-sm" onclick="loadSessionAttendance(${session.id})">Period ${session.period}</button></td>
+        <td>${escapeHtml(session.class_name)}</td>
+        <td>${escapeHtml(session.subject)}</td>
+        <td><span class="text-success">${session.present_count} Present</span> / <span class="text-danger">${session.absent_count} Absent</span></td>
+      </tr>`).join('') : `
+      <tr><td colspan="5" style="text-align:center;color:var(--muted);">No sessions found.</td></tr>`;
+
+    el.innerHTML = `<div class="panel-title" style="margin-bottom:1rem;">Marked Attendance History</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Date</th><th>Period</th><th>Class</th><th>Subject</th><th>Attendance</th></tr></thead>
+          <tbody>${sessionRows}</tbody>
+        </table>
+      </div>`;
+  }
+
+  async function loadSessionAttendance(sessionId) {
+    const detail = document.getElementById('session-attendance-detail');
+    const res = await api('GET', `/staff/session-attendance/?session_id=${sessionId}`);
+    if (!res.ok) {
+      toast(res.data.message || 'Unable to load attendance', 'error');
+      return;
     }
+    const session = res.data.session;
+    const students = res.data.students || [];
+    const rows = students.length ? students.map((student, index) => `
+      <tr>
+        <td>${index + 1}</td>
+        <td>${escapeHtml(student.register_no)}</td>
+        <td>${escapeHtml(student.student_name)}</td>
+        <td class="${student.status === 'Present' ? 'text-success' : 'text-danger'}">${student.status}</td>
+      </tr>`).join('') : `
+      <tr><td colspan="4" style="text-align:center;color:var(--muted);">No attendance marked for this session.</td></tr>`;
+
+    detail.innerHTML = `
+      <div class="panel-title" style="font-size:1rem;">Period ${session.period} - ${escapeHtml(session.class_name)} - ${escapeHtml(session.subject)} - ${escapeHtml(session.date)}</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Register No.</th><th>Student Name</th><th>Status</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+    detail.classList.remove('hidden');
+    detail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
   async function loadStaffClasses() {
@@ -1287,8 +1770,8 @@
           <td>${s.register_no}</td>
           <td>
             <div class="att-toggle" id="toggle-${s.id}">
-              <button onclick="setStatus(${s.id},'Present')" id="btn-present-${s.id}">✅ Present</button>
-              <button onclick="setStatus(${s.id},'Absent')"  id="btn-absent-${s.id}">❌ Absent</button>
+              <button onclick="setStatus(${s.id},'Present')" id="btn-present-${s.id}">Present</button>
+              <button onclick="setStatus(${s.id},'Absent')"  id="btn-absent-${s.id}">Absent</button>
             </div>
           </td>
         </tr>`;

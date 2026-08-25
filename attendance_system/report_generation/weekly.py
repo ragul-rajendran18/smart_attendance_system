@@ -15,9 +15,6 @@ from ..models import Attendance, AttendanceSession, Batch, Student
 from ..permissions import IsAdminRole
 
 
-SUBJECT_ABBREVIATIONS = {
-    "human values and ethics": "HVT",
-}
 EXCEL_UNAVAILABLE = "-"
 
 
@@ -29,10 +26,6 @@ def _staff_short_name(staff_name):
 
 
 def _subject_short_name(subject_name):
-    abbreviation = SUBJECT_ABBREVIATIONS.get(subject_name.strip().lower())
-    if abbreviation:
-        return abbreviation
-
     ignored_words = {"a", "an", "and", "of", "the"}
     initials = [
         word[0]
@@ -68,7 +61,7 @@ def _weekly_report_response(request):
 
     students = list(
         Student.objects.filter(class_name=class_name, batch=batch)
-        .order_by("register_no")
+        .order_by("student_name")
     )
     sessions = list(
         AttendanceSession.objects.filter(
@@ -169,7 +162,7 @@ def weekly_report_excel(request):
             "message": "The Excel template supports a maximum of 6 dates"
         }, status=status.HTTP_400_BAD_REQUEST)
 
-    template_path = settings.BASE_DIR / "III IT B WEEKLY ATT.xlsx"
+    template_path = settings.BASE_DIR / "REPORT_TEMPLATE.xlsx"
     workbook = load_workbook(template_path)
     worksheet = workbook["Master"]
 
