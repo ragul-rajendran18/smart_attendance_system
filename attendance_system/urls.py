@@ -4,7 +4,6 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from .views import (
     login,
     me,
-    refresh_access_token,
     logout,
     admin_dashboard,
     create_student,
