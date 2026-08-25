@@ -4,7 +4,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from .views import (
     login,
     me,
-    refresh_access_token
+    refresh_access_token,
     logout,
     admin_dashboard,
     create_student,
@@ -43,7 +43,7 @@ urlpatterns = [
     path("login/",                  login),
     path("logout/",                 logout),
     path("me/",                     me),
-    path("token/refresh/",          TokenRefreshView.as_view()),
+    path("token/refresh-token/",          TokenRefreshView.as_view()),
     
     path("token/access-token/",refresh_access_token,name="access_token")
     # ── Admin dashboard ──
