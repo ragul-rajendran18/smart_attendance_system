@@ -193,3 +193,10 @@ class Attendance(models.Model):
 
     def __str__(self):
         return f"{self.student.student_name} - {self.status}"
+
+class Holiday(models.Model):
+    date = models.DateField(unique=True)
+    reason = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+    def __str__(self):
+        return f"{self.date} - {self.reason}"

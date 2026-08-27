@@ -23,11 +23,13 @@ import SubjectList     from './pages/admin/SubjectList';
 import CreateBatch     from './pages/admin/CreateBatch';
 import BulkImport      from './pages/admin/BulkImport';
 import WeeklyReport    from './pages/admin/WeeklyReport';
+import HolidayList     from './pages/admin/HolidayList';
 
 // Staff
 import StaffDashboard  from './pages/staff/Dashboard';
 import StaffProfile    from './pages/staff/Profile';
 import StartSession    from './pages/staff/StartSession';
+import EditSession     from './pages/staff/EditSession';
 
 // Student
 import StudentAttendance from './pages/student/Attendance';
@@ -62,12 +64,14 @@ export default function App() {
           <Route path="batches"        element={<CreateBatch />} />
           <Route path="bulk-import"    element={<BulkImport />} />
           <Route path="report"         element={<WeeklyReport />} />
+          <Route path="holidays"       element={<HolidayList />} />
         </Route>
 
         {/* STAFF */}
         <Route path="/staff" element={<ProtectedRoute role="STAFF"><AppShell /></ProtectedRoute>}>
           <Route index   element={<StaffDashboard />} />
           <Route path="session" element={<StartSession />} />
+          <Route path="edit-session" element={<EditSession />} />
           <Route path="profile" element={<StaffProfile />} />
         </Route>
 

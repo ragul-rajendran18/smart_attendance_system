@@ -88,3 +88,33 @@
 
 .table tbody tr { transition: background 0.1s; }
 .table tbody tr:hover { background: var(--surface2); }
+
+/* Holiday banner */
+.holidayBanner {
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  border-radius: var(--radius);
+  padding: 0.9rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.holidayIcon {
+  color: #DC2626;
+  flex-shrink: 0;
+}
+
+.holidayTitle {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #991B1B;
+  margin: 0;
+}
+
+.holidayReason {
+  font-size: 0.82rem;
+  color: #B91C1C;
+  margin: 0.15rem 0 0;
+}

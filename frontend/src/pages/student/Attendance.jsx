@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, CalendarOff } from 'lucide-react';
 import API       from '../../api/client';
 import Card      from '../../components/ui/Card';
 import Badge     from '../../components/ui/Badge';
@@ -10,9 +10,13 @@ import styles    from './Attendance.module.css';
 
 export default function StudentAttendance() {
   const [data, setData] = useState(null);
+  const [holiday, setHoliday] = useState(null);
 
   useEffect(() => {
     API.get('/student/attendance/').then(({ data }) => setData(data)).catch(() => {});
+    API.get('/today-holiday/').then(({ data }) => {
+      if (data.is_holiday) setHoliday(data);
+    }).catch(() => {});
   }, []);
 
   if (!data) return (
@@ -27,6 +31,16 @@ export default function StudentAttendance() {
   return (
     <div className="fade-up">
       <PageTitle sub="Your attendance record across all subjects">My Attendance</PageTitle>
+
+      {holiday && (
+        <div className={styles.holidayBanner}>
+          <CalendarOff size={18} className={styles.holidayIcon} />
+          <div>
+            <p className={styles.holidayTitle}>Today is a Holiday</p>
+            <p className={styles.holidayReason}>{holiday.date} &mdash; {holiday.reason}</p>
+          </div>
+        </div>
+      )}
 
       <div className={styles.stats}>
         <StatCard label="Total Classes" value={data.total_classes} accent="#304443" iconBg="#EBF1F0" />

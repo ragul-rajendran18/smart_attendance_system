@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { CalendarOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 import API      from '../../api/client';
 import Card     from '../../components/ui/Card';
@@ -20,6 +21,7 @@ export default function StartSession() {
   const [students, setStudents] = useState([]);
   const [starting, setStarting] = useState(false);
   const [saving,   setSaving]   = useState(false);
+  const [holiday,  setHoliday]  = useState(null);
 
   useEffect(() => {
     API.get('/staff/classes/')
@@ -51,7 +53,11 @@ export default function StartSession() {
       setStudents(data.students.map((s) => ({ ...s, status: 'Present' })));
       toast.success(data.message);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to start session');
+      const msg = err.response?.data?.message || 'Failed to start session';
+      if (err.response?.status === 403 && err.response?.data?.reason) {
+        setHoliday({ date: err.response.data.date, reason: err.response.data.reason });
+      }
+      toast.error(msg);
     } finally { setStarting(false); }
   }
 
@@ -85,6 +91,16 @@ export default function StartSession() {
   return (
     <div className="fade-up">
       <PageTitle sub="Mark attendance for the current period">Start Session</PageTitle>
+
+      {holiday && (
+        <div className={styles.holidayBanner}>
+          <CalendarOff size={18} className={styles.holidayIcon} />
+          <div>
+            <p className={styles.holidayTitle}>Today is a Holiday</p>
+            <p className={styles.holidayReason}>{holiday.date} &mdash; {holiday.reason}</p>
+          </div>
+        </div>
+      )}
 
       <div className={styles.grid}>
         <Card>

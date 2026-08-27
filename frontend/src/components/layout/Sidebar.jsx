@@ -1,8 +1,8 @@
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Users, UserPlus, UserCheck, BookOpen,
-  Layers, Upload, FileBarChart, User, PlayCircle,
-  CalendarCheck, PlusCircle, List,
+  Layers, Upload, FileBarChart, User, PlayCircle, Pencil,
+  CalendarCheck, PlusCircle, List, CalendarOff,
 } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
 import styles from './Sidebar.module.css';
@@ -28,13 +28,15 @@ const NAV = {
     Tools: [
       { to: '/admin/bulk-import',    label: 'Bulk Import',     icon: Upload },
       { to: '/admin/report',         label: 'Weekly Report',   icon: FileBarChart },
+      { to: '/admin/holidays',       label: 'Holidays',        icon: CalendarOff },
     ],
   },
   STAFF: {
     Main: [
-      { to: '/staff',          label: 'History',       icon: List,          end: true },
-      { to: '/staff/session',  label: 'Start Session', icon: PlayCircle },
-      { to: '/staff/profile',  label: 'Profile',       icon: User },
+      { to: '/staff',              label: 'History',         icon: List,          end: true },
+      { to: '/staff/session',      label: 'Start Session',   icon: PlayCircle },
+      { to: '/staff/edit-session', label: 'Edit Attendance',  icon: Pencil },
+      { to: '/staff/profile',      label: 'Profile',         icon: User },
     ],
   },
   STUDENT: {

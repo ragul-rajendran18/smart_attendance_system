@@ -32,8 +32,13 @@ from .views import (
     class_subjects,
     start_session,
     save_attendance,
+    edit_attendance,
     bulk_upload_staff,
     download_staff_import_result,
+    create_holiday,
+    list_holidays,
+    delete_holiday,
+    today_holiday,
 )
 from .report_generation.weekly import weekly_report, weekly_report_excel
 
@@ -70,6 +75,7 @@ urlpatterns = [
     path("staff/class-subjects/",   class_subjects),
     path("staff/start-session/",    start_session),
     path("staff/save-attendance/",  save_attendance),
+    path( "staff/edit-attendance/", edit_attendance),
     path("staff/bulk-upload/",      bulk_upload_staff,              name="bulk-upload-staff"),
     path("staff/bulk-upload/download/<str:token>/", download_staff_import_result, name="download-staff-import-result"),
 
@@ -86,4 +92,10 @@ urlpatterns = [
     # ── Reports ──
     path("weekly-report/",          weekly_report),
     path("weekly-report/excel/",    weekly_report_excel),
+
+    # ── Holidays ──
+    path("holidays/",               list_holidays),
+    path("holidays/create/",        create_holiday),
+    path("holidays/delete/",        delete_holiday),
+    path("today-holiday/",          today_holiday),
 ]

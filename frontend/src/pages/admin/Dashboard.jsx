@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   Users, UserCheck, BookOpen, Layers,
   CalendarCheck, CheckCircle2, Info,
+  CalendarOff,
 } from 'lucide-react';
 import API from '../../api/client';
 import StatCard  from '../../components/ui/StatCard';
@@ -15,6 +16,7 @@ const CARDS = [
   { label: 'Active Batches',   key: 'total_batches',     icon: Layers,        accent: '#D97706', iconBg: '#FFFBEB' },
   { label: "Today's Sessions", key: 'todays_sessions',   icon: CalendarCheck, accent: '#16A34A', iconBg: '#F0FDF4' },
   { label: 'Completed Today',  key: 'todays_completed',  icon: CheckCircle2,  accent: '#16A34A', iconBg: '#F0FDF4' },
+  { label: 'Upcoming Holidays', key: 'upcoming_holidays', icon: CalendarOff,  accent: '#DC2626', iconBg: '#FEF2F2' },
 ];
 
 export default function AdminDashboard() {
