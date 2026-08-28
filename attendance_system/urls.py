@@ -98,5 +98,3 @@ urlpatterns = [
     path("holidays/delete/",        delete_holiday),
     path("today-holiday/",          today_holiday),
 ]
-    
-]
