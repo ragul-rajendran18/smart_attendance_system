@@ -242,6 +242,10 @@ def weekly_report_excel(request):
         if not isinstance(worksheet.cell(row, 3), MergedCell):
             worksheet.cell(row, 3).value = None
 
+    absent_col_counts = {}
+    for col in range(5, 53):
+        absent_col_counts[col] = 0
+
     for row_number, student in enumerate(report_data["students"], start=10):
         worksheet.cell(row_number, 1).value = student["register_no"]
         worksheet.cell(row_number, 2).value = student["student_name"]
@@ -259,6 +263,8 @@ def weekly_report_excel(request):
                     present += 1
                 elif value == "Absent":
                     cell_value = "a"
+                    col_index = first_column + period - 1
+                    absent_col_counts[col_index] = absent_col_counts.get(col_index, 0) + 1
                 elif value == "N/C":
                     cell_value = EXCEL_UNAVAILABLE
                 else:
@@ -271,6 +277,11 @@ def weekly_report_excel(request):
             round((present / (present + student["absent"])) * 100, 2)
             if present + student["absent"] else 0
         )
+
+    absent_row = 74
+    worksheet.cell(absent_row, 1).value = "Absent Count"
+    for col in range(5, 53):
+        worksheet.cell(absent_row, col).value = absent_col_counts.get(col, 0)
 
     output = BytesIO()
     workbook.save(output)
