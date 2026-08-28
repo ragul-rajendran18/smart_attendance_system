@@ -1,4 +1,4 @@
-from datetime import time
+from datetime import time ,datetime
 import uuid
 
 from django.utils import timezone
@@ -15,9 +15,9 @@ from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 
-from .models import User, Student, Staff, Subject, AttendanceSession, Attendance, Batch
+from .models import User, Student, Staff, Subject, AttendanceSession, Attendance, Batch, Holiday
 from .permissions import IsAdminRole
-from .serializer import LoginSerializer, StudentSerializer, StaffSerializer, BatchSerializer
+from .serializer import LoginSerializer, StudentSerializer, StaffSerializer, BatchSerializer, HolidaySerializer
 from .utils import generate_username, generate_password
 from .services.student_import_service import import_students_from_file, generate_credentials_excel
 from .services.staff_import_service import import_staff_from_file
@@ -120,6 +120,7 @@ def logout(request):
 def admin_dashboard(request):
     """Summary stats for the admin landing dashboard."""
     today = timezone.localdate()
+    upcoming_holidays = Holiday.objects.filter(date__gte=today).count()
     return Response({
         "success": True,
         "data": {
@@ -131,6 +132,7 @@ def admin_dashboard(request):
             "todays_completed": AttendanceSession.objects.filter(
                 date=today, status="COMPLETED"
             ).count(),
+            "upcoming_holidays": upcoming_holidays,
         },
     })
 
@@ -175,6 +177,20 @@ def student_attendance(request):
     present = records.filter(status="Present").count()
     absent = records.filter(status="Absent").count()
     return Response({"student_name": student.student_name, "register_no": student.register_no, "total_classes": records.count(), "present": present, "absent": absent, "attendance_percentage": round((present / (present + absent)) * 100, 2) if present + absent else 0, "attendance": [{"period": record.session.period, "subject": record.session.subject.subject_name, "status": record.status} for record in records]})
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def today_holiday(request):
+    today = timezone.localdate()
+    holiday = Holiday.objects.filter(date=today).first()
+    if holiday:
+        return Response({
+            "is_holiday": True,
+            "date": holiday.date.strftime("%d/%m/%Y"),
+            "reason": holiday.reason,
+        })
+    return Response({"is_holiday": False})
 
 
 @api_view(["GET"])
@@ -425,7 +441,7 @@ def session_attendance(request):
     except (AttendanceSession.DoesNotExist, ValueError):
         return Response({"message": "Session not found"}, status=status.HTTP_404_NOT_FOUND)
     records = Attendance.objects.filter(session=session).select_related("student").order_by("student__register_no")
-    return Response({"session": {"id": session.id, "period": session.period, "class_name": session.class_name, "subject": session.subject.subject_name, "date": session.date.isoformat()}, "students": [
+    return Response({"session": {"id": session.id, "period": session.period, "class_name": session.class_name, "subject": session.subject.subject_name, "date": session.date.isoformat(), "status": session.status}, "students": [
         {"id": record.student_id, "student_name": record.student.student_name, "register_no": record.student.register_no, "status": record.status}
         for record in records
     ]})
@@ -577,6 +593,17 @@ def class_subjects(request):
 def start_session(request):
     if not _staff_required(request):
         return Response({"message": "Permission Denied"}, status=status.HTTP_403_FORBIDDEN)
+    today = timezone.localdate()
+    holiday = Holiday.objects.filter(date=today).first()
+    if holiday:
+        return Response(
+            {
+                "message": "Today is a holiday. Attendance session cannot be started.",
+                "date": today.strftime("%d/%m/%Y"),
+                "reason": holiday.reason
+            },
+            status=status.HTTP_403_FORBIDDEN
+        )
     try:
         staff = Staff.objects.get(user=request.user)
         subject = Subject.objects.get(id=request.data.get("subject_id"))
@@ -619,6 +646,110 @@ def save_attendance(request):
     session.status = "COMPLETED"
     session.save(update_fields=["status"])
     return Response({"message": "Attendance Saved Successfully"})
+
+@api_view(["PUT"])
+@permission_classes([IsAuthenticated])
+def edit_attendance(request):
+
+    if not _staff_required(request):
+        return Response(
+            {"message": "Permission Denied"},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    session_id = request.data.get("session_id")
+    attendance_data = request.data.get("attendance")
+
+    if not session_id or not attendance_data:
+        return Response(
+            {
+                "message": "session_id and attendance are required"
+            },
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    try:
+        session = AttendanceSession.objects.get(
+            id=session_id,
+            staff__user=request.user
+        )
+
+    except (AttendanceSession.DoesNotExist, ValueError):
+        return Response(
+            {
+                "message": "Attendance session not found"
+            },
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    # Check current active period
+    active_period = get_active_period()
+
+    if active_period is None:
+        return Response(
+            {
+                "message": "Attendance editing is not allowed outside the session time"
+            },
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    current_period, _, _ = active_period
+    # Current period must match the attendance session period
+    if session.period != current_period:
+        return Response(
+            {
+                "message": "Attendance can only be edited during its active session period"
+            },
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    # Make sure it is today's session
+    if session.date != timezone.localdate():
+        return Response(
+            {
+                "message": "Attendance can only be edited on the session date"
+            },
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    # Update attendance
+    for record in attendance_data:
+        student_id = record.get("student_id")
+        attendance_status = record.get("status")
+
+        if not student_id or attendance_status not in ["Present", "Absent"]:
+            return Response(
+                {
+                    "message": "Invalid attendance data"
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        # Verify student belongs to this session class
+        if not Student.objects.filter(
+            id=student_id,
+            class_name=session.class_name
+        ).exists():
+
+            return Response(
+                {
+                    "message": f"Student {student_id} does not belong to this class"
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        Attendance.objects.update_or_create(
+            session=session,
+            student_id=student_id,
+            defaults={
+                "status": attendance_status
+            }
+        )
+    return Response(
+        {
+            "message": "Attendance Updated Successfully",
+            "session_id": session.id,
+            "period": session.period
+        },
+        status=status.HTTP_200_OK
+    )
 
 
 @api_view(["POST"])
@@ -673,5 +804,93 @@ def download_staff_import_result(request, token):
     response["Content-Disposition"] = 'attachment; filename="staff_import_result.xlsx"'
     return response
 
+@api_view(["POST"])
+@permission_classes([IsAdminRole])
+def create_holiday(request):
+
+    date = request.data.get("date")
+    reason = request.data.get("reason")
+
+    if not date or not reason:
+        return Response(
+            {
+                "message": "date and reason are required"
+            },
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    try:
+        holiday_date = datetime.strptime(
+            date,
+            "%d/%m/%Y"
+        ).date()
+
+    except ValueError:
+        return Response(
+            {
+                "message": "Invalid date format. Use DD/MM/YYYY"
+            },
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    if Holiday.objects.filter(date=holiday_date).exists():
+
+        return Response(
+            {
+                "message": "Holiday already exists for this date"
+            },
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    holiday = Holiday.objects.create(
+        date=holiday_date,
+        reason=reason
+    )
+
+    return Response(
+        {
+            "message": "Holiday created successfully",
+            "id": holiday.id,
+            "date": holiday.date.strftime("%d/%m/%Y"),
+            "reason": holiday.reason
+        },
+        status=status.HTTP_201_CREATED
+    )
+
+
+@api_view(["GET"])
+@permission_classes([IsAdminRole])
+def list_holidays(request):
+    holidays = Holiday.objects.all().order_by("-date")
+    return Response({
+        "holidays": [
+            {
+                "id": h.id,
+                "date": h.date.strftime("%d/%m/%Y"),
+                "reason": h.reason,
+            }
+            for h in holidays
+        ]
+    })
+
+
+@api_view(["DELETE"])
+@permission_classes([IsAdminRole])
+def delete_holiday(request):
+    holiday_id = request.data.get("id") or request.query_params.get("id")
+    if not holiday_id:
+        return Response(
+            {"message": "Holiday id is required"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    try:
+        holiday = Holiday.objects.get(id=holiday_id)
+    except Holiday.DoesNotExist:
+        return Response(
+            {"message": "Holiday not found"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    holiday.delete()
+    return Response({"message": "Holiday deleted successfully"})
 
 

@@ -7,7 +7,9 @@ from .models import (
     TimeTable,
     AttendanceSession,
     Attendance,
-    Batch
+    Batch,
+    Holiday
+
 )
 
 
@@ -73,3 +75,9 @@ class BatchSerializer(serializers.ModelSerializer):
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150)
     password = serializers.CharField(write_only=True)
+
+
+class HolidaySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Holiday
+        fields = "__all__"

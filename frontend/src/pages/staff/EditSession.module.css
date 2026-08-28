@@ -1,55 +1,6 @@
-.grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.25rem;
-  margin-bottom: 1.5rem;
-}
-
-@media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
-
-.formBody { display: flex; flex-direction: column; gap: 1rem; }
-
-/* Period schedule */
-.schedTitle {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--muted);
-  margin-bottom: 0.75rem;
-}
-
-.schedList { display: flex; flex-direction: column; }
-
-.schedRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.45rem 0;
-  border-bottom: 1px solid var(--border);
-  font-size: 0.83rem;
-}
-
-.schedRow:last-child { border-bottom: none; }
-
-.pNum {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--primary);
-  background: #EBF1F0;
-  border: 1px solid #CFDFDC;
-  border-radius: 4px;
-  padding: 0.12rem 0.4rem;
-  min-width: 28px;
-  text-align: center;
-}
-
-.pTime { color: var(--muted); font-size: 0.81rem; }
-
-/* Session banner */
 .banner {
-  background: #EBF1F0;
-  border: 1px solid #CFDFDC;
+  background: #FFF7ED;
+  border: 1px solid #FED7AA;
   border-radius: var(--radius);
   padding: 0.9rem 1.25rem;
   display: flex;
@@ -66,7 +17,7 @@
   gap: 0.65rem;
   font-size: 0.88rem;
   font-weight: 600;
-  color: var(--primary);
+  color: #9A3412;
 }
 
 .bannerMeta {
@@ -85,7 +36,17 @@
 
 .countSep { color: var(--border2); }
 
-/* Toolbar */
+.changedBadge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #9A3412;
+  background: #FFEDD5;
+  border: 1px solid #FED7AA;
+  border-radius: 4px;
+  padding: 0.12rem 0.45rem;
+  margin-left: 0.25rem;
+}
+
 .toolbar {
   display: flex;
   align-items: center;
@@ -96,7 +57,6 @@
 
 .toolbar .save { margin-left: auto; }
 
-/* Attendance table */
 .tableWrap {
   overflow-x: auto;
   border: 1px solid var(--border);
@@ -135,7 +95,14 @@
 .table tbody tr { transition: background 0.1s; }
 .table tbody tr:hover { background: var(--surface2); }
 
-/* Toggle buttons */
+.changedRow {
+  background: #FFFBEB !important;
+}
+
+.changedRow:hover {
+  background: #FEF3C7 !important;
+}
+
 .toggle {
   display: inline-flex;
   border: 1px solid var(--border);
@@ -171,32 +138,79 @@
   border-color: var(--danger-bd) !important;
 }
 
-/* Holiday banner */
-.holidayBanner {
-  background: #FEF2F2;
-  border: 1px solid #FECACA;
-  border-radius: var(--radius);
-  padding: 0.9rem 1.25rem;
+.emptyState {
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.emptyTitle {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.35rem;
+}
+
+.emptySub {
+  font-size: 0.83rem;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+}
+
+.emptyHint {
+  font-size: 0.78rem;
+  color: var(--subtle);
+  max-width: 420px;
+  margin: 0.75rem auto 0;
+  line-height: 1.5;
+}
+
+.scheduleGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+@media (max-width: 640px) {
+  .scheduleGrid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.scheduleItem {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1.25rem;
+  gap: 0.5rem;
+  padding: 0.45rem 0.65rem;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
 }
 
-.holidayIcon {
-  color: #DC2626;
-  flex-shrink: 0;
-}
-
-.holidayTitle {
-  font-size: 0.88rem;
+.periodBadge {
+  font-size: 0.72rem;
   font-weight: 700;
-  color: #991B1B;
-  margin: 0;
+  color: var(--primary);
+  background: #EBF1F0;
+  border: 1px solid #CFDFDC;
+  border-radius: 4px;
+  padding: 0.12rem 0.4rem;
+  min-width: 28px;
+  text-align: center;
 }
 
-.holidayReason {
-  font-size: 0.82rem;
-  color: #B91C1C;
-  margin: 0.15rem 0 0;
+.periodTime {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.sectionTitle {
+  font-size: 0.83rem;
+  font-weight: 700;
+  color: var(--text2);
+  margin-bottom: 0.25rem;
+}
+
+.sectionSub {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-bottom: 1rem;
 }
