@@ -27,7 +27,7 @@ API.interceptors.response.use(
       }
       try {
         const { data } = await axios.post(
-          'https://smart-attendance-system-edf8.onrender.com/api',
+          'https://smart-attendance-system-edf8.onrender.com/api/token/refresh/',
           { refresh }
         );
         localStorage.setItem('access', data.access);
