@@ -51,6 +51,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://0.0.0.0:8000",
     "http://localhost:59322",
     "http://127.0.0.1:59322",
+    "https://smart-attendance-system-pi-woad.vercel.app"
 ]
 
 MIDDLEWARE = [
