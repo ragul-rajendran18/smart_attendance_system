@@ -27,10 +27,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-9zpl3plwnc#inw57v$7dqlo$4t4nywepxvps3h&kfftf4h!-vi'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = []
-
+DEBUG=False
+ALLOWED_HOSTS=['smart-attendance-system-edf8.onrender.com']
 
 # Application definition
 
@@ -50,7 +48,10 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:3000",
     "http://127.0.0.1:5173",
-    "http://127.0.0.1:3000",
+    "http://0.0.0.0:8000",
+    "http://localhost:59322",
+    "http://127.0.0.1:59322",
+    "https://smart-attendance-system-pi-woad.vercel.app"
 ]
 
 MIDDLEWARE = [

@@ -47,8 +47,7 @@ urlpatterns = [
     path("login/",                  login),
     path("logout/",                 logout),
     path("me/",                     me),
-    path("token/refresh/",          TokenRefreshView.as_view()),
-
+    path("token/refresh",          TokenRefreshView.as_view()),
     # ── Admin dashboard ──
     path("admin/dashboard/",        admin_dashboard),
 
@@ -98,4 +97,6 @@ urlpatterns = [
     path("holidays/create/",        create_holiday),
     path("holidays/delete/",        delete_holiday),
     path("today-holiday/",          today_holiday),
+]
+    
 ]

@@ -892,3 +892,5 @@ def delete_holiday(request):
         )
     holiday.delete()
     return Response({"message": "Holiday deleted successfully"})
+
+
