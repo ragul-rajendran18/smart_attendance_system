@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: 'https://smart-attendance-system-edf8.onrender.com/api',
+  baseURL: 'https://smart-attendance-system-pgyu.onrender.com/api',
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -27,7 +27,7 @@ API.interceptors.response.use(
       }
       try {
         const { data } = await axios.post(
-          'https://smart-attendance-system-edf8.onrender.com/api/token/refresh/',
+          'https://smart-attendance-system-pgyu.onrender.com/api/token/refresh/',
           { refresh }
         );
         localStorage.setItem('access', data.access);
